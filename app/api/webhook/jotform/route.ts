@@ -31,37 +31,35 @@ export async function POST(request: NextRequest) {
 
     console.log('Parsed submission:', JSON.stringify(submission, null, 2))
 
-    // Extract answers from JotForm format
-    const answers = submission.answers || {}
-
-    // Map JotForm fields to our database schema
-    // JotForm uses field IDs, so we need to find by field name
-    const getAnswer = (fieldName: string) => {
-      const field = Object.values(answers).find(
-        (a: any) => a.name?.toLowerCase().includes(fieldName.toLowerCase()) ||
-                    a.text?.toLowerCase().includes(fieldName.toLowerCase())
-      ) as any
-      return field?.answer || field?.prettyFormat || null
-    }
-
-    // Alternative: direct field access if JotForm sends with field names
-    const getField = (fieldName: string) => {
-      return submission[fieldName] || formData.get(fieldName) || null
+    // JotForm sends fields with IDs like q29_companyName
+    // Extract by looking for specific field patterns
+    const getJotFormField = (...patterns: string[]) => {
+      for (const key of Object.keys(submission)) {
+        for (const pattern of patterns) {
+          if (key.toLowerCase().includes(pattern.toLowerCase())) {
+            const value = submission[key]
+            return value && value.trim() !== '' ? value : null
+          }
+        }
+      }
+      return null
     }
 
     // Build application object
     const application = {
-      submission_id: submission.submissionID || submission.submission_id || Date.now().toString(),
-      submitted_at: submission.created_at || new Date().toISOString(),
-      company_name: getAnswer('company name') || getField('Company Name') || 'Unknown Company',
-      founder_names: getAnswer('founder names') || getField('Founder Names'),
-      founder_linkedins: getAnswer('linkedin') || getField('Founder LinkedIns'),
-      founder_bios: getAnswer('founder bio') || getField('Founder Bios (1 or 2 sentences per founder)'),
-      primary_email: getAnswer('email') || getField('Primary Email'),
-      company_description: getAnswer('description') || getField('Company Description'),
-      website: getAnswer('website') || getField('Website (if exists)'),
-      previous_funding: getAnswer('funding') || getAnswer('raised funding') || getField('Have you previously raised funding? If so from whom? Have you done any other accelerators? Which one, when, what batch?'),
-      deck_link: getAnswer('deck') || getAnswer('documents') || getField('Link to additional documents (deck, one-pager, ect.)'),
+      submission_id: submission.event_id || submission.submissionID || Date.now().toString(),
+      submitted_at: submission.submitDate
+        ? new Date(parseInt(submission.submitDate)).toISOString()
+        : new Date().toISOString(),
+      company_name: getJotFormField('companyname', 'company_name') || 'Unknown Company',
+      founder_names: getJotFormField('typea', 'founder_names', 'foundername'),
+      founder_linkedins: getJotFormField('founderlinkedin', 'linkedin'),
+      founder_bios: getJotFormField('founderbio', 'bio'),
+      primary_email: getJotFormField('primaryemail', 'email'),
+      company_description: getJotFormField('companydescription', 'description'),
+      website: getJotFormField('website'),
+      previous_funding: getJotFormField('haveyou', 'funding', 'raised'),
+      deck_link: getJotFormField('linkto', 'deck', 'documents'),
       stage: 'new',
       votes_revealed: false,
       all_votes_in: false,
