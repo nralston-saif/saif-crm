@@ -9,7 +9,7 @@ const supabase = createClient(
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('Received JotForm webhook - FINAL VERSION with rawSubmission fix')
+    console.log('Received JotForm webhook - v6 parsing rawRequest/pretty')
 
     // JotForm sends data as form-encoded
     const formData = await request.formData()
@@ -18,24 +18,63 @@ export async function POST(request: NextRequest) {
     const allKeys = Array.from(formData.keys())
     console.log('FormData keys received:', allKeys)
 
-    // Helper to get form field value - JotForm prefixes fields with rawSubmission[]
+    // JotForm sends the actual submission data in 'rawRequest' or 'pretty' field
+    const rawRequest = formData.get('rawRequest')
+    const pretty = formData.get('pretty')
+
+    console.log('rawRequest:', typeof rawRequest === 'string' ? rawRequest.substring(0, 500) : rawRequest)
+    console.log('pretty:', typeof pretty === 'string' ? pretty.substring(0, 500) : pretty)
+
+    // Parse the submission data
+    let submissionData: any = {}
+
+    if (rawRequest && typeof rawRequest === 'string') {
+      try {
+        submissionData = JSON.parse(rawRequest)
+        console.log('Parsed rawRequest, keys:', Object.keys(submissionData))
+      } catch (e) {
+        console.error('Failed to parse rawRequest:', e)
+      }
+    }
+
+    if (pretty && typeof pretty === 'string') {
+      try {
+        const prettyData = JSON.parse(pretty)
+        console.log('Parsed pretty, keys:', Object.keys(prettyData))
+        // pretty might have the actual answers
+        if (prettyData.answers) {
+          submissionData = prettyData
+        }
+      } catch (e) {
+        console.error('Failed to parse pretty:', e)
+      }
+    }
+
+    // Helper to get form field value from submission data
     const getFormField = (key: string): string | null => {
-      // Try with rawSubmission[] prefix first (JotForm format)
-      let value = formData.get(`rawSubmission[${key}]`)
-      // Fallback to direct key
-      if (!value) value = formData.get(key)
-      if (!value) return null
-      if (typeof value !== 'string') return null
-      const trimmed = value.trim()
-      return trimmed !== '' ? trimmed : null
+      // Check if submissionData has an 'answers' object
+      if (submissionData.answers && submissionData.answers[key]) {
+        const answer = submissionData.answers[key]
+        // Answer might be an object with 'answer' property or just a string
+        const value = typeof answer === 'object' ? answer.answer : answer
+        if (!value) return null
+        const trimmed = String(value).trim()
+        return trimmed !== '' ? trimmed : null
+      }
+
+      // Fallback to direct property
+      if (submissionData[key]) {
+        const trimmed = String(submissionData[key]).trim()
+        return trimmed !== '' ? trimmed : null
+      }
+
+      return null
     }
 
     // Build application object using exact JotForm field IDs
     const application = {
-      submission_id: getFormField('event_id') || Date.now().toString(),
-      submitted_at: getFormField('submitDate')
-        ? new Date(parseInt(getFormField('submitDate')!)).toISOString()
-        : new Date().toISOString(),
+      submission_id: submissionData.submission_id || formData.get('submissionID') || Date.now().toString(),
+      submitted_at: submissionData.created_at || new Date().toISOString(),
       company_name: getFormField('q29_companyName') || 'Unknown Company',
       founder_names: getFormField('q26_typeA'),
       founder_linkedins: getFormField('q28_founderLinkedins'),
