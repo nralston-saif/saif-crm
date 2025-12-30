@@ -13,50 +13,31 @@ export async function POST(request: NextRequest) {
 
     // JotForm sends data as form-encoded
     const formData = await request.formData()
-    const rawSubmission = formData.get('rawRequest')
 
-    let submission: any = {}
-
-    if (rawSubmission) {
-      // Parse the raw JSON submission
-      submission = JSON.parse(rawSubmission as string)
-    } else {
-      // Parse individual form fields
-      for (const [key, value] of formData.entries()) {
-        submission[key] = value
-      }
-    }
-
-    console.log('Parsed submission:', JSON.stringify(submission, null, 2))
-
-    // Extract field value safely - handle both string and File types
-    const getField = (key: string) => {
-      const value = submission[key]
+    // Helper to get form field value
+    const getFormField = (key: string): string | null => {
+      const value = formData.get(key)
       if (!value) return null
-
-      // If it's a File object, skip it
-      if (typeof value === 'object' && value.constructor.name === 'File') return null
-
-      // Convert to string and trim
-      const stringValue = String(value).trim()
-      return stringValue !== '' ? stringValue : null
+      if (typeof value !== 'string') return null
+      const trimmed = value.trim()
+      return trimmed !== '' ? trimmed : null
     }
 
     // Build application object using exact JotForm field IDs
     const application = {
-      submission_id: submission.event_id || submission.submissionID || Date.now().toString(),
-      submitted_at: submission.submitDate
-        ? new Date(parseInt(submission.submitDate)).toISOString()
+      submission_id: getFormField('event_id') || Date.now().toString(),
+      submitted_at: getFormField('submitDate')
+        ? new Date(parseInt(getFormField('submitDate')!)).toISOString()
         : new Date().toISOString(),
-      company_name: getField('q29_companyName') || 'Unknown Company',
-      founder_names: getField('q26_typeA'),
-      founder_linkedins: getField('q28_founderLinkedins'),
-      founder_bios: getField('q40_founderBios'),
-      primary_email: getField('q32_primaryEmail'),
-      company_description: getField('q30_companyDescription'),
-      website: getField('q31_websiteif'),
-      previous_funding: getField('q35_haveYou'),
-      deck_link: getField('q41_linkTo'),
+      company_name: getFormField('q29_companyName') || 'Unknown Company',
+      founder_names: getFormField('q26_typeA'),
+      founder_linkedins: getFormField('q28_founderLinkedins'),
+      founder_bios: getFormField('q40_founderBios'),
+      primary_email: getFormField('q32_primaryEmail'),
+      company_description: getFormField('q30_companyDescription'),
+      website: getFormField('q31_websiteif'),
+      previous_funding: getFormField('q35_haveYou'),
+      deck_link: getFormField('q41_linkTo'),
       stage: 'new',
       votes_revealed: false,
       all_votes_in: false,
