@@ -9,10 +9,14 @@ const supabase = createClient(
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('Received JotForm webhook - VERSION 3 with proper git author')
+    console.log('Received JotForm webhook - FINAL VERSION with rawSubmission fix')
 
     // JotForm sends data as form-encoded
     const formData = await request.formData()
+
+    // Log all form data keys to debug
+    const allKeys = Array.from(formData.keys())
+    console.log('FormData keys received:', allKeys)
 
     // Helper to get form field value - JotForm prefixes fields with rawSubmission[]
     const getFormField = (key: string): string | null => {
