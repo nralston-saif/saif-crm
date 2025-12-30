@@ -9,7 +9,7 @@ const supabase = createClient(
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('Received JotForm webhook')
+    console.log('Received JotForm webhook - VERSION 2 with rawSubmission fix')
 
     // JotForm sends data as form-encoded
     const formData = await request.formData()
