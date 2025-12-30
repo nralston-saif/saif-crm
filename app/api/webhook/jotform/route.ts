@@ -31,35 +31,28 @@ export async function POST(request: NextRequest) {
 
     console.log('Parsed submission:', JSON.stringify(submission, null, 2))
 
-    // JotForm sends fields with IDs like q29_companyName
-    // Extract by looking for specific field patterns
-    const getJotFormField = (...patterns: string[]) => {
-      for (const key of Object.keys(submission)) {
-        for (const pattern of patterns) {
-          if (key.toLowerCase().includes(pattern.toLowerCase())) {
-            const value = submission[key]
-            return value && value.trim() !== '' ? value : null
-          }
-        }
-      }
-      return null
+    // Extract field value safely
+    const getField = (value: any) => {
+      if (!value || typeof value !== 'string') return null
+      const trimmed = value.trim()
+      return trimmed !== '' ? trimmed : null
     }
 
-    // Build application object
+    // Build application object using exact JotForm field IDs
     const application = {
       submission_id: submission.event_id || submission.submissionID || Date.now().toString(),
       submitted_at: submission.submitDate
         ? new Date(parseInt(submission.submitDate)).toISOString()
         : new Date().toISOString(),
-      company_name: getJotFormField('companyname', 'company_name') || 'Unknown Company',
-      founder_names: getJotFormField('typea', 'founder_names', 'foundername'),
-      founder_linkedins: getJotFormField('founderlinkedin', 'linkedin'),
-      founder_bios: getJotFormField('founderbio', 'bio'),
-      primary_email: getJotFormField('primaryemail', 'email'),
-      company_description: getJotFormField('companydescription', 'description'),
-      website: getJotFormField('website'),
-      previous_funding: getJotFormField('haveyou', 'funding', 'raised'),
-      deck_link: getJotFormField('linkto', 'deck', 'documents'),
+      company_name: getField(submission.q29_companyName) || 'Unknown Company',
+      founder_names: getField(submission.q26_typeA),
+      founder_linkedins: getField(submission.q28_founderLinkedins),
+      founder_bios: getField(submission.q40_founderBios),
+      primary_email: getField(submission.q32_primaryEmail),
+      company_description: getField(submission.q30_companyDescription),
+      website: getField(submission.q31_websiteif),
+      previous_funding: getField(submission.q35_haveYou),
+      deck_link: getField(submission.q41_linkTo),
       stage: 'new',
       votes_revealed: false,
       all_votes_in: false,
