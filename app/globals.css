@@ -3,14 +3,20 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #ffffff !important;
+  --foreground: #171717 !important;
+  color-scheme: light !important;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
+  color: #171717 !important;
+  background: #ffffff !important;
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Force all elements to light mode */
+* {
+  color-scheme: light !important;
 }
 
 @layer utilities {
