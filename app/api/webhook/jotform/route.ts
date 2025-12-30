@@ -14,9 +14,12 @@ export async function POST(request: NextRequest) {
     // JotForm sends data as form-encoded
     const formData = await request.formData()
 
-    // Helper to get form field value
+    // Helper to get form field value - JotForm prefixes fields with rawSubmission[]
     const getFormField = (key: string): string | null => {
-      const value = formData.get(key)
+      // Try with rawSubmission[] prefix first (JotForm format)
+      let value = formData.get(`rawSubmission[${key}]`)
+      // Fallback to direct key
+      if (!value) value = formData.get(key)
       if (!value) return null
       if (typeof value !== 'string') return null
       const trimmed = value.trim()
