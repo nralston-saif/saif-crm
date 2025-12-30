@@ -89,6 +89,7 @@ export async function GET() {
   return NextResponse.json({
     status: 'ok',
     message: 'JotForm webhook endpoint is ready',
+    version: 'v5-rawSubmission-fix',
     timestamp: new Date().toISOString()
   })
 }
