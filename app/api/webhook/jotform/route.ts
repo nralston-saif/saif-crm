@@ -15,21 +15,21 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
     const rawSubmission = formData.get('rawRequest')
 
-    let submission: any
+    let submission: any = {}
 
     if (rawSubmission) {
       // Parse the raw JSON submission
       submission = JSON.parse(rawSubmission as string)
     } else {
-      // Fallback: parse individual form fields
-      const data: any = {}
-      formData.forEach((value, key) => {
-        data[key] = value
-      })
-      submission = data
+      // Parse individual form fields
+      for (const [key, value] of formData.entries()) {
+        submission[key] = value
+      }
     }
 
     console.log('Parsed submission:', JSON.stringify(submission, null, 2))
+    console.log('q29_companyName value:', submission.q29_companyName)
+    console.log('q26_typeA value:', submission.q26_typeA)
 
     // Extract field value safely
     const getField = (value: any) => {
