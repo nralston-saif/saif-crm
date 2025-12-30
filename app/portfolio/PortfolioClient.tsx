@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import ApplicationDetailModal from '@/components/ApplicationDetailModal'
+import { useToast } from '@/components/Toast'
 
 type Investment = {
   id: string
@@ -39,6 +40,7 @@ export default function PortfolioClient({
 
   const router = useRouter()
   const supabase = createClient()
+  const { showToast } = useToast()
 
   // Filter and sort investments
   const filteredInvestments = useMemo(() => {
@@ -110,7 +112,7 @@ export default function PortfolioClient({
 
   const handleSaveInvestment = async () => {
     if (!formData.company_name) {
-      alert('Company name is required')
+      showToast('Company name is required', 'warning')
       return
     }
 
@@ -129,7 +131,7 @@ export default function PortfolioClient({
           .eq('id', formData.id)
 
         if (error) {
-          alert('Error updating investment: ' + error.message)
+          showToast('Error updating investment: ' + error.message, 'error')
           setLoading(false)
           return
         }
@@ -139,17 +141,19 @@ export default function PortfolioClient({
           .insert(dataToSave)
 
         if (error) {
-          alert('Error creating investment: ' + error.message)
+          showToast('Error creating investment: ' + error.message, 'error')
           setLoading(false)
           return
         }
       }
 
+      const isUpdate = !!formData.id
       setShowAddModal(false)
       setFormData({})
+      showToast(isUpdate ? 'Investment updated' : 'Investment added to portfolio', 'success')
       router.refresh()
     } catch (err) {
-      alert('An unexpected error occurred')
+      showToast('An unexpected error occurred', 'error')
     }
 
     setLoading(false)

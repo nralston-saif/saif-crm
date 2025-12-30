@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import ApplicationDetailModal from '@/components/ApplicationDetailModal'
+import { useToast } from '@/components/Toast'
 
 type Vote = {
   userId: string
@@ -70,6 +71,7 @@ export default function DeliberationClient({
 
   const router = useRouter()
   const supabase = createClient()
+  const { showToast } = useToast()
 
   // Filter and sort decided applications
   const filteredDecidedApplications = useMemo(() => {
@@ -134,15 +136,15 @@ export default function DeliberationClient({
     // Validate investment fields if decision is 'yes'
     if (decision === 'yes') {
       if (!investmentAmount || investmentAmount <= 0) {
-        alert('Please enter an investment amount')
+        showToast('Please enter an investment amount', 'warning')
         return
       }
       if (!investmentTerms) {
-        alert('Please enter investment terms')
+        showToast('Please enter investment terms', 'warning')
         return
       }
       if (!investmentDate) {
-        alert('Please enter an investment date')
+        showToast('Please enter an investment date', 'warning')
         return
       }
     }
@@ -165,7 +167,7 @@ export default function DeliberationClient({
         })
 
       if (error) {
-        alert('Error saving deliberation: ' + error.message)
+        showToast('Error saving deliberation: ' + error.message, 'error')
         setLoading(false)
         return
       }
@@ -191,7 +193,7 @@ export default function DeliberationClient({
           })
 
         if (investmentError) {
-          alert('Error creating investment: ' + investmentError.message)
+          showToast('Error creating investment: ' + investmentError.message, 'error')
           setLoading(false)
           return
         }
@@ -210,9 +212,19 @@ export default function DeliberationClient({
       }
 
       setSelectedApp(null)
+
+      // Show appropriate success message based on decision
+      if (decision === 'yes') {
+        showToast('Investment recorded and added to portfolio', 'success')
+      } else if (decision === 'no') {
+        showToast('Application marked as rejected', 'success')
+      } else {
+        showToast('Deliberation saved', 'success')
+      }
+
       router.refresh()
     } catch (err) {
-      alert('An unexpected error occurred')
+      showToast('An unexpected error occurred', 'error')
     }
 
     setLoading(false)

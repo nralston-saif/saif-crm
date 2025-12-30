@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { useToast } from '@/components/Toast'
 
 type Vote = {
   oduserId: string
@@ -67,6 +68,7 @@ export default function PipelineClient({
 
   const router = useRouter()
   const supabase = createClient()
+  const { showToast } = useToast()
 
   // Separate applications into sections
   const needsYourVote = applications.filter(app => !app.userVote)
@@ -126,7 +128,7 @@ export default function PipelineClient({
         })
 
       if (error) {
-        alert('Error submitting vote: ' + error.message)
+        showToast('Error submitting vote: ' + error.message, 'error')
         setLoading(false)
         return
       }
@@ -142,9 +144,10 @@ export default function PipelineClient({
       setSelectedApp(null)
       setVote('')
       setNotes('')
+      showToast('Vote submitted successfully', 'success')
       router.refresh()
     } catch (err) {
-      alert('An unexpected error occurred')
+      showToast('An unexpected error occurred', 'error')
     }
 
     setLoading(false)
@@ -164,14 +167,15 @@ export default function PipelineClient({
         .eq('id', app.id)
 
       if (error) {
-        alert('Error moving to deliberation: ' + error.message)
+        showToast('Error moving to deliberation: ' + error.message, 'error')
         setMovingToDelib(null)
         return
       }
 
+      showToast('Moved to deliberation', 'success')
       router.refresh()
     } catch (err) {
-      alert('An unexpected error occurred')
+      showToast('An unexpected error occurred', 'error')
     }
 
     setMovingToDelib(null)
@@ -193,7 +197,7 @@ export default function PipelineClient({
         .eq('id', confirmMoveApp.id)
 
       if (error) {
-        alert('Error moving to deliberation: ' + error.message)
+        showToast('Error moving to deliberation: ' + error.message, 'error')
         setMovingToDelib(null)
         setConfirmMoveApp(null)
         return
@@ -201,9 +205,10 @@ export default function PipelineClient({
 
       setConfirmMoveApp(null)
       setOpenMenuId(null)
+      showToast('Moved to deliberation', 'success')
       router.refresh()
     } catch (err) {
-      alert('An unexpected error occurred')
+      showToast('An unexpected error occurred', 'error')
     }
 
     setMovingToDelib(null)

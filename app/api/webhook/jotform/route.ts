@@ -7,9 +7,26 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+// Webhook secret for authentication (set in JotForm webhook URL as ?secret=xxx)
+const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET
+
 export async function POST(request: NextRequest) {
   try {
-    console.log('Received JotForm webhook - v6 parsing rawRequest/pretty')
+    // Verify webhook secret if configured
+    if (WEBHOOK_SECRET) {
+      const url = new URL(request.url)
+      const providedSecret = url.searchParams.get('secret')
+
+      if (providedSecret !== WEBHOOK_SECRET) {
+        console.error('Webhook authentication failed - invalid secret')
+        return NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        )
+      }
+    }
+
+    console.log('Received JotForm webhook - v7 with authentication')
 
     // JotForm sends data as form-encoded
     const formData = await request.formData()
@@ -128,7 +145,8 @@ export async function GET() {
   return NextResponse.json({
     status: 'ok',
     message: 'JotForm webhook endpoint is ready',
-    version: 'v5-rawSubmission-fix',
+    version: 'v7-with-authentication',
+    authenticated: !!WEBHOOK_SECRET,
     timestamp: new Date().toISOString()
   })
 }
