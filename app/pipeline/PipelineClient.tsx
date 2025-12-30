@@ -58,6 +58,8 @@ export default function PipelineClient({
   const [notes, setNotes] = useState<string>('')
   const [loading, setLoading] = useState(false)
   const [movingToDelib, setMovingToDelib] = useState<string | null>(null)
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+  const [confirmMoveApp, setConfirmMoveApp] = useState<Application | null>(null)
 
   // Search and sort state for old applications
   const [searchQuery, setSearchQuery] = useState('')
@@ -175,6 +177,38 @@ export default function PipelineClient({
     setMovingToDelib(null)
   }
 
+  const handleMoveToDeliberationWithoutVoting = async () => {
+    if (!confirmMoveApp) return
+
+    setMovingToDelib(confirmMoveApp.id)
+
+    try {
+      // Update application stage to deliberation and reveal votes
+      const { error } = await supabase
+        .from('applications')
+        .update({
+          stage: 'deliberation',
+          votes_revealed: true
+        })
+        .eq('id', confirmMoveApp.id)
+
+      if (error) {
+        alert('Error moving to deliberation: ' + error.message)
+        setMovingToDelib(null)
+        setConfirmMoveApp(null)
+        return
+      }
+
+      setConfirmMoveApp(null)
+      setOpenMenuId(null)
+      router.refresh()
+    } catch (err) {
+      alert('An unexpected error occurred')
+    }
+
+    setMovingToDelib(null)
+  }
+
   const openVoteModal = (app: Application) => {
     setSelectedApp(app)
     setVote(app.userVote || '')
@@ -221,6 +255,7 @@ export default function PipelineClient({
 
   const renderApplicationCard = (app: Application, showFullVotes: boolean = false) => {
     const allVotesIn = app.voteCount >= 3
+    const needsVote = !app.userVote
 
     return (
       <div
@@ -239,11 +274,53 @@ export default function PipelineClient({
                 <p className="text-sm text-gray-500 mt-0.5 truncate">{app.founder_names}</p>
               )}
             </div>
-            {app.userVote && (
-              <span className={`badge ml-2 flex-shrink-0 ${getVoteBadgeStyle(app.userVote)}`}>
-                Your vote: {app.userVote}
-              </span>
-            )}
+            <div className="flex items-center gap-2 ml-2 flex-shrink-0">
+              {app.userVote && (
+                <span className={`badge ${getVoteBadgeStyle(app.userVote)}`}>
+                  Your vote: {app.userVote}
+                </span>
+              )}
+              {needsVote && (
+                <div className="relative">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setOpenMenuId(openMenuId === app.id ? null : app.id)
+                    }}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600 hover:text-gray-900"
+                  >
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 16 16">
+                      <circle cx="8" cy="2.5" r="1.5"/>
+                      <circle cx="8" cy="8" r="1.5"/>
+                      <circle cx="8" cy="13.5" r="1.5"/>
+                    </svg>
+                  </button>
+                  {openMenuId === app.id && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-10"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setOpenMenuId(null)
+                        }}
+                      />
+                      <div className="absolute right-0 mt-1 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setOpenMenuId(null)
+                            setConfirmMoveApp(app)
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          Move to Deliberation without voting
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {app.company_description && (
@@ -885,6 +962,58 @@ export default function PipelineClient({
                 className="btn btn-secondary"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal for Moving to Deliberation Without Voting */}
+      {confirmMoveApp && (
+        <div className="modal-backdrop" onClick={() => !movingToDelib && setConfirmMoveApp(null)}>
+          <div
+            className="modal-content max-w-md"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="p-6 border-b border-gray-100">
+              <h2 className="text-xl font-bold text-gray-900">
+                Confirm Move to Deliberation
+              </h2>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6">
+              <p className="text-gray-700">
+                Are you sure you want to move <span className="font-semibold">{confirmMoveApp.company_name}</span> to deliberation without completing all votes?
+              </p>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex gap-3">
+              <button
+                onClick={() => setConfirmMoveApp(null)}
+                className="btn btn-secondary flex-1"
+                disabled={movingToDelib === confirmMoveApp.id}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleMoveToDeliberationWithoutVoting}
+                disabled={movingToDelib === confirmMoveApp.id}
+                className="btn btn-primary flex-1"
+              >
+                {movingToDelib === confirmMoveApp.id ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Moving...
+                  </span>
+                ) : (
+                  'Confirm'
+                )}
               </button>
             </div>
           </div>
