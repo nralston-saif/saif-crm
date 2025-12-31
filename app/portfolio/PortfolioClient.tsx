@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import ApplicationDetailModal from '@/components/ApplicationDetailModal'
+import NotesModal from '@/components/NotesModal'
 import { useToast } from '@/components/Toast'
 
 type Investment = {
@@ -20,6 +21,7 @@ type Investment = {
   founders: string | null
   other_funders: string | null
   notes: string | null
+  meetingNotes: string | null
 }
 
 type SortOption = 'date-newest' | 'date-oldest' | 'name-az' | 'name-za' | 'amount-high' | 'amount-low'
@@ -30,6 +32,7 @@ export default function PortfolioClient({
   investments: Investment[]
 }) {
   const [selectedInvestment, setSelectedInvestment] = useState<Investment | null>(null)
+  const [notesInvestment, setNotesInvestment] = useState<Investment | null>(null)
   const [showAddModal, setShowAddModal] = useState(false)
   const [formData, setFormData] = useState<Partial<Investment>>({})
   const [loading, setLoading] = useState(false)
@@ -443,6 +446,7 @@ export default function PortfolioClient({
           {filteredInvestments.map((investment) => (
             <div
               key={investment.id}
+              id={`inv-${investment.id}`}
               onClick={() => openViewModal(investment)}
               className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden card-hover cursor-pointer"
             >
@@ -500,17 +504,34 @@ export default function PortfolioClient({
                   </div>
                 )}
 
-                {investment.website && (
-                  <a
-                    href={investment.website.startsWith('http') ? investment.website : `https://${investment.website}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="inline-flex items-center gap-1 text-sm text-[#1a1a1a] hover:text-black underline mt-4"
-                  >
-                    <span>🌐</span> Website
-                  </a>
-                )}
+                {/* Links and Notes */}
+                <div className="flex items-center gap-3 mt-4">
+                  {investment.website && (
+                    <a
+                      href={investment.website.startsWith('http') ? investment.website : `https://${investment.website}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-1 text-sm text-[#1a1a1a] hover:text-black underline"
+                    >
+                      <span>🌐</span> Website
+                    </a>
+                  )}
+                  {investment.meetingNotes && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setNotesInvestment(investment)
+                      }}
+                      className="inline-flex items-center gap-1.5 text-sm text-[#1a1a1a] bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Notes
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))}
@@ -768,6 +789,15 @@ export default function PortfolioClient({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Notes Modal */}
+      {notesInvestment && (
+        <NotesModal
+          companyName={notesInvestment.company_name}
+          notes={notesInvestment.meetingNotes}
+          onClose={() => setNotesInvestment(null)}
+        />
       )}
     </div>
   )

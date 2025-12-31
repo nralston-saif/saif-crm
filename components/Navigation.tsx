@@ -1,13 +1,29 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import SearchModal from './SearchModal'
 
 export default function Navigation({ userName }: { userName: string }) {
+  const [showSearch, setShowSearch] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
+
+  // Cmd+K / Ctrl+K keyboard shortcut
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setShowSearch(true)
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -57,8 +73,34 @@ export default function Navigation({ userName }: { userName: string }) {
             </div>
           </div>
 
-          {/* User Menu */}
-          <div className="flex items-center gap-4">
+          {/* Search and User Menu */}
+          <div className="flex items-center gap-2">
+            {/* Search Button */}
+            <button
+              onClick={() => setShowSearch(true)}
+              className="flex items-center gap-2 px-3 py-2 text-sm text-[#666666] hover:text-[#1a1a1a] hover:bg-[#f5f5f5] rounded-lg transition-colors"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+              <span className="hidden sm:inline">Search</span>
+              <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-xs text-gray-400 bg-gray-100 border border-gray-200 rounded">
+                ⌘K
+              </kbd>
+            </button>
+
+            <div className="w-px h-6 bg-gray-200 mx-1 hidden sm:block" />
+
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-[#1a1a1a] rounded-full flex items-center justify-center">
                 <span className="text-white text-sm font-medium">
@@ -100,6 +142,9 @@ export default function Navigation({ userName }: { userName: string }) {
           })}
         </div>
       </div>
+
+      {/* Search Modal */}
+      {showSearch && <SearchModal onClose={() => setShowSearch(false)} />}
     </nav>
   )
 }

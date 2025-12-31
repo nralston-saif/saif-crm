@@ -13,6 +13,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@liveblocks/client": "^3.12.1",
+    "@liveblocks/react": "^3.12.1",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.89.0",
     "@tailwindcss/postcss": "^4.1.18",
@@ -29,5 +31,8 @@
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3",
     "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "mammoth": "^1.11.0"
   }
 }

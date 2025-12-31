@@ -16,8 +16,12 @@ type Application = {
   id: string
   company_name: string
   founder_names: string | null
+  founder_linkedins: string | null
+  founder_bios: string | null
+  primary_email: string | null
   company_description: string | null
   website: string | null
+  previous_funding: string | null
   deck_link: string | null
   submitted_at: string
   voteCount: number
@@ -265,6 +269,7 @@ export default function PipelineClient({
     return (
       <div
         key={app.id}
+        id={`app-${app.id}`}
         className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden card-hover cursor-pointer"
         onClick={() => setDetailApp(app)}
       >
@@ -470,6 +475,7 @@ export default function PipelineClient({
     return (
       <div
         key={app.id}
+        id={`app-${app.id}`}
         className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 cursor-pointer hover:shadow-md transition-shadow"
         onClick={() => setDetailApp(app)}
       >
@@ -819,7 +825,7 @@ export default function PipelineClient({
               )}
 
               {/* Founder Bios */}
-              {!isNewApplication(detailApp) && detailApp.founder_bios && (
+              {detailApp.founder_bios && (
                 <div>
                   <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">
                     Founder Bios
@@ -829,7 +835,7 @@ export default function PipelineClient({
               )}
 
               {/* Founder LinkedIns */}
-              {!isNewApplication(detailApp) && detailApp.founder_linkedins && (
+              {detailApp.founder_linkedins && (
                 <div>
                   <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">
                     Founder LinkedIn Profiles
@@ -859,7 +865,7 @@ export default function PipelineClient({
               )}
 
               {/* Contact Email */}
-              {!isNewApplication(detailApp) && detailApp.primary_email && (
+              {detailApp.primary_email && (
                 <div>
                   <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">
                     Primary Email
@@ -891,7 +897,7 @@ export default function PipelineClient({
               )}
 
               {/* Previous Funding */}
-              {!isNewApplication(detailApp) && detailApp.previous_funding && (
+              {detailApp.previous_funding && (
                 <div>
                   <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">
                     Previous Funding
