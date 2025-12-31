@@ -39,6 +39,7 @@ type Application = {
   votes: Vote[]
   deliberation: Deliberation
   email_sent: boolean | null
+  email_sender_name: string | null
 }
 
 type SortOption = 'date-newest' | 'date-oldest' | 'name-az' | 'name-za' | 'decision-yes' | 'decision-no'
@@ -290,9 +291,13 @@ export default function DeliberationClient({
                     {app.deliberation.status}
                   </span>
                 )}
-                {app.email_sent && (
+                {app.email_sent ? (
                   <span className="badge text-xs bg-blue-100 text-blue-700">
                     Email Sent
+                  </span>
+                ) : app.email_sender_name && (
+                  <span className="badge text-xs bg-purple-100 text-purple-700">
+                    {app.email_sender_name} sending
                   </span>
                 )}
               </div>

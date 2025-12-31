@@ -27,7 +27,8 @@ export default async function DeliberationPage() {
     .select(`
       *,
       votes(id, vote, user_id, notes, vote_type, users(name)),
-      deliberations(*)
+      deliberations(*),
+      email_sender:users!applications_email_sender_id_fkey(name)
     `)
     .eq('stage', 'deliberation')
     .eq('votes_revealed', true)
@@ -72,6 +73,7 @@ export default async function DeliberationPage() {
       votes,
       deliberation,
       email_sent: app.email_sent,
+      email_sender_name: (app.email_sender as any)?.name || null,
     }
   }) || []
 

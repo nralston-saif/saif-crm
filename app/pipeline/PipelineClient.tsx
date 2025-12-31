@@ -45,6 +45,7 @@ type OldApplication = {
   stage: string
   submitted_at: string
   email_sent: boolean | null
+  email_sender_name: string | null
 }
 
 type SortOption = 'date-newest' | 'date-oldest' | 'name-az' | 'name-za' | 'stage'
@@ -546,9 +547,13 @@ export default function PipelineClient({
             )}
           </div>
           <div className="flex items-center gap-2 ml-2 flex-shrink-0">
-            {app.email_sent && (
+            {app.email_sent ? (
               <span className="badge text-xs bg-blue-100 text-blue-700">
                 Email Sent
+              </span>
+            ) : app.email_sender_name && (
+              <span className="badge text-xs bg-purple-100 text-purple-700">
+                {app.email_sender_name} sending
               </span>
             )}
             <span className={`badge capitalize ${getStageBadgeStyle(app.stage)}`}>

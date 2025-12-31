@@ -31,10 +31,13 @@ export default async function PipelinePage() {
     .in('stage', ['new', 'voting'])
     .order('submitted_at', { ascending: false })
 
-  // Get old/archived applications (already processed)
+  // Get old/archived applications (already processed) with email sender info
   const { data: oldApplications } = await supabase
     .from('applications')
-    .select('*')
+    .select(`
+      *,
+      email_sender:users!applications_email_sender_id_fkey(name)
+    `)
     .in('stage', ['deliberation', 'invested', 'rejected'])
     .order('submitted_at', { ascending: false })
 
@@ -84,7 +87,10 @@ export default async function PipelinePage() {
       <Navigation userName={profile?.name || user.email || 'User'} />
       <PipelineClient
         applications={applicationsWithVotes}
-        oldApplications={oldApplications || []}
+        oldApplications={(oldApplications || []).map(app => ({
+          ...app,
+          email_sender_name: (app.email_sender as any)?.name || null
+        }))}
         userId={user.id}
         partners={partners || []}
       />
