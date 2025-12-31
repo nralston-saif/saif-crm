@@ -38,6 +38,12 @@ export default async function PipelinePage() {
     .in('stage', ['deliberation', 'invested', 'rejected'])
     .order('submitted_at', { ascending: false })
 
+  // Get all partners for email sender selection
+  const { data: partners } = await supabase
+    .from('users')
+    .select('id, name')
+    .order('name')
+
   // Transform applications to include vote counts and user's vote
   const applicationsWithVotes = applications?.map((app) => {
     // Filter to only initial votes
@@ -80,6 +86,7 @@ export default async function PipelinePage() {
         applications={applicationsWithVotes}
         oldApplications={oldApplications || []}
         userId={user.id}
+        partners={partners || []}
       />
     </div>
   )

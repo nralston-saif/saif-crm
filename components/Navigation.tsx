@@ -32,6 +32,7 @@ export default function Navigation({ userName }: { userName: string }) {
   }
 
   const navItems = [
+    { name: 'Dashboard', href: '/dashboard' },
     { name: 'Pipeline', href: '/pipeline' },
     { name: 'Deliberation', href: '/deliberation' },
     { name: 'Portfolio', href: '/portfolio' },
@@ -44,7 +45,7 @@ export default function Navigation({ userName }: { userName: string }) {
           {/* Logo and Nav */}
           <div className="flex items-center">
             {/* SAIF Logo - AI is bold */}
-            <Link href="/pipeline" className="flex-shrink-0 flex items-center">
+            <Link href="/dashboard" className="flex-shrink-0 flex items-center">
               <span className="text-2xl tracking-tight text-[#1a1a1a]">
                 <span className="font-light">S</span>
                 <span className="font-bold">AI</span>

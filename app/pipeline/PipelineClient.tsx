@@ -48,14 +48,26 @@ type OldApplication = {
 
 type SortOption = 'date-newest' | 'date-oldest' | 'name-az' | 'name-za' | 'stage'
 
+type Partner = {
+  id: string
+  name: string
+}
+
+type EmailSenderModal = {
+  app: Application
+  action: 'deliberation' | 'reject'
+} | null
+
 export default function PipelineClient({
   applications,
   oldApplications,
   userId,
+  partners,
 }: {
   applications: Application[]
   oldApplications: OldApplication[]
   userId: string
+  partners: Partner[]
 }) {
   const [selectedApp, setSelectedApp] = useState<Application | null>(null)
   const [detailApp, setDetailApp] = useState<Application | OldApplication | null>(null)
@@ -65,6 +77,10 @@ export default function PipelineClient({
   const [movingToDelib, setMovingToDelib] = useState<string | null>(null)
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [confirmMoveApp, setConfirmMoveApp] = useState<Application | null>(null)
+
+  // Email sender modal state
+  const [emailSenderModal, setEmailSenderModal] = useState<EmailSenderModal>(null)
+  const [selectedEmailSender, setSelectedEmailSender] = useState<string>('')
 
   // Search and sort state for old applications
   const [searchQuery, setSearchQuery] = useState('')
@@ -155,6 +171,55 @@ export default function PipelineClient({
     }
 
     setLoading(false)
+  }
+
+  // Open email sender modal before moving to deliberation
+  const promptMoveToDeliberation = (app: Application) => {
+    setEmailSenderModal({ app, action: 'deliberation' })
+    setSelectedEmailSender('')
+  }
+
+  // Open email sender modal before rejecting
+  const promptReject = (app: Application) => {
+    setEmailSenderModal({ app, action: 'reject' })
+    setSelectedEmailSender('')
+  }
+
+  // Process the action after email sender is selected
+  const handleEmailSenderConfirm = async () => {
+    if (!emailSenderModal || !selectedEmailSender) return
+
+    const { app, action } = emailSenderModal
+    setMovingToDelib(app.id)
+
+    try {
+      const newStage = action === 'deliberation' ? 'deliberation' : 'rejected'
+
+      const { error } = await supabase
+        .from('applications')
+        .update({
+          stage: newStage,
+          votes_revealed: true,
+          email_sender_id: selectedEmailSender,
+          email_sent: false,
+        })
+        .eq('id', app.id)
+
+      if (error) {
+        showToast(`Error: ${error.message}`, 'error')
+        setMovingToDelib(null)
+        return
+      }
+
+      const message = action === 'deliberation' ? 'Moved to deliberation' : 'Marked as rejected'
+      showToast(message, 'success')
+      setEmailSenderModal(null)
+      router.refresh()
+    } catch (err) {
+      showToast('An unexpected error occurred', 'error')
+    }
+
+    setMovingToDelib(null)
   }
 
   const handleMoveToDeliberation = async (app: Application) => {
@@ -451,18 +516,30 @@ export default function PipelineClient({
                 {app.userVote ? 'Edit Vote' : 'Cast Vote'}
               </button>
 
-              {/* Move to Deliberation Button - only show when all 3 have voted */}
+              {/* Action buttons - only show when all 3 have voted */}
               {allVotesIn && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleMoveToDeliberation(app)
-                  }}
-                  disabled={movingToDelib === app.id}
-                  className="px-4 py-2 rounded-lg text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm transition-all disabled:opacity-50"
-                >
-                  {movingToDelib === app.id ? 'Moving...' : 'Move to Deliberation →'}
-                </button>
+                <>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      promptReject(app)
+                    }}
+                    disabled={movingToDelib === app.id}
+                    className="px-4 py-2 rounded-lg text-sm font-medium bg-red-600 text-white hover:bg-red-700 shadow-sm transition-all disabled:opacity-50"
+                  >
+                    Reject
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      promptMoveToDeliberation(app)
+                    }}
+                    disabled={movingToDelib === app.id}
+                    className="px-4 py-2 rounded-lg text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm transition-all disabled:opacity-50"
+                  >
+                    {movingToDelib === app.id ? 'Moving...' : 'Move to Deliberation →'}
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -1024,6 +1101,73 @@ export default function PipelineClient({
                   </span>
                 ) : (
                   'Confirm'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Email Sender Modal */}
+      {emailSenderModal && (
+        <div className="modal-backdrop" onClick={() => !movingToDelib && setEmailSenderModal(null)}>
+          <div
+            className="modal-content max-w-md"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="p-6 border-b border-gray-100">
+              <h2 className="text-xl font-bold text-gray-900">
+                {emailSenderModal.action === 'deliberation' ? 'Move to Deliberation' : 'Reject Application'}
+              </h2>
+              <p className="text-gray-500 mt-1">{emailSenderModal.app.company_name}</p>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Who is sending the email?
+              </label>
+              <select
+                value={selectedEmailSender}
+                onChange={(e) => setSelectedEmailSender(e.target.value)}
+                className="input"
+              >
+                <option value="">Select a partner...</option>
+                {partners.map((partner) => (
+                  <option key={partner.id} value={partner.id}>
+                    {partner.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex gap-3">
+              <button
+                onClick={() => setEmailSenderModal(null)}
+                className="btn btn-secondary flex-1"
+                disabled={movingToDelib === emailSenderModal.app.id}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleEmailSenderConfirm}
+                disabled={!selectedEmailSender || movingToDelib === emailSenderModal.app.id}
+                className={`btn flex-1 ${emailSenderModal.action === 'reject' ? 'bg-red-600 hover:bg-red-700 text-white' : 'btn-primary'}`}
+              >
+                {movingToDelib === emailSenderModal.app.id ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Processing...
+                  </span>
+                ) : emailSenderModal.action === 'deliberation' ? (
+                  'Move to Deliberation'
+                ) : (
+                  'Reject Application'
                 )}
               </button>
             </div>
