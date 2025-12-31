@@ -516,30 +516,11 @@ export default function PipelineClient({
                 {app.userVote ? 'Edit Vote' : 'Cast Vote'}
               </button>
 
-              {/* Action buttons - only show when all 3 have voted */}
+              {/* Show indicator when ready to advance */}
               {allVotesIn && (
-                <>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      promptReject(app)
-                    }}
-                    disabled={movingToDelib === app.id}
-                    className="px-4 py-2 rounded-lg text-sm font-medium bg-red-600 text-white hover:bg-red-700 shadow-sm transition-all disabled:opacity-50"
-                  >
-                    Reject
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      promptMoveToDeliberation(app)
-                    }}
-                    disabled={movingToDelib === app.id}
-                    className="px-4 py-2 rounded-lg text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm transition-all disabled:opacity-50"
-                  >
-                    {movingToDelib === app.id ? 'Moving...' : 'Move to Deliberation →'}
-                  </button>
-                </>
+                <span className="px-3 py-2 rounded-lg text-sm font-medium bg-emerald-100 text-emerald-700">
+                  Ready to advance
+                </span>
               )}
             </div>
           </div>
@@ -1033,24 +1014,57 @@ export default function PipelineClient({
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
-              {isNewApplication(detailApp) && (
-                <button
-                  onClick={() => {
-                    setDetailApp(null)
-                    openVoteModal(detailApp)
-                  }}
-                  className={`btn ${detailApp.userVote ? 'btn-secondary' : 'btn-primary'}`}
-                >
-                  {detailApp.userVote ? 'Edit Vote' : 'Cast Vote'}
-                </button>
-              )}
-              <button
-                onClick={() => setDetailApp(null)}
-                className="btn btn-secondary"
-              >
-                Close
-              </button>
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
+              <div className="flex flex-wrap justify-between gap-3">
+                {/* Left side - action buttons */}
+                <div className="flex gap-3">
+                  {isNewApplication(detailApp) && detailApp.voteCount >= 3 && (
+                    <>
+                      <button
+                        onClick={() => {
+                          setDetailApp(null)
+                          promptReject(detailApp)
+                        }}
+                        disabled={movingToDelib === detailApp.id}
+                        className="btn bg-red-600 hover:bg-red-700 text-white disabled:opacity-50"
+                      >
+                        Reject
+                      </button>
+                      <button
+                        onClick={() => {
+                          setDetailApp(null)
+                          promptMoveToDeliberation(detailApp)
+                        }}
+                        disabled={movingToDelib === detailApp.id}
+                        className="btn bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50"
+                      >
+                        Move to Deliberation
+                      </button>
+                    </>
+                  )}
+                </div>
+
+                {/* Right side - vote and close */}
+                <div className="flex gap-3">
+                  {isNewApplication(detailApp) && (
+                    <button
+                      onClick={() => {
+                        setDetailApp(null)
+                        openVoteModal(detailApp)
+                      }}
+                      className={`btn ${detailApp.userVote ? 'btn-secondary' : 'btn-primary'}`}
+                    >
+                      {detailApp.userVote ? 'Edit Vote' : 'Cast Vote'}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setDetailApp(null)}
+                    className="btn btn-secondary"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
