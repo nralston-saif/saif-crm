@@ -149,11 +149,11 @@ function MeetingNotesInput({
     storage.set('draft', '')
   }, [])
 
-  const handleFinalizeNote = async () => {
+  const handleFinalizeNote = async (confirmed: boolean = false) => {
     if (!content.trim()) return
 
-    // If others are typing, show confirmation first
-    if (othersTyping.length > 0 && !showConfirm) {
+    // Always show confirmation first
+    if (!confirmed) {
       setShowConfirm(true)
       return
     }
@@ -210,12 +210,16 @@ function MeetingNotesInput({
         onContentChange={handleContentChange}
       />
 
-      {/* Confirmation warning when others are typing */}
+      {/* Confirmation dialog */}
       {showConfirm && (
-        <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-4">
-          <p className="text-amber-800 text-sm mb-3">
-            <strong>{typingNames.join(', ')}</strong> {typingNames.length === 1 ? 'is' : 'are'} still typing.
-            Finalizing will save the current draft and clear it for everyone.
+        <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <p className="text-blue-800 text-sm mb-3">
+            {othersTyping.length > 0 ? (
+              <>
+                <strong>{typingNames.join(', ')}</strong> {typingNames.length === 1 ? 'is' : 'are'} still typing.{' '}
+              </>
+            ) : null}
+            Finalizing will save this note and clear the draft for everyone.
           </p>
           <div className="flex gap-2">
             <button
@@ -225,10 +229,10 @@ function MeetingNotesInput({
               Cancel
             </button>
             <button
-              onClick={handleFinalizeNote}
+              onClick={() => handleFinalizeNote(true)}
               className="btn btn-primary text-sm"
             >
-              Finalize Anyway
+              Confirm & Save
             </button>
           </div>
         </div>
