@@ -38,6 +38,7 @@ type Application = {
   stage: string
   votes: Vote[]
   deliberation: Deliberation
+  email_sent: boolean | null
 }
 
 type SortOption = 'date-newest' | 'date-oldest' | 'name-az' | 'name-za' | 'decision-yes' | 'decision-no'
@@ -287,6 +288,11 @@ export default function DeliberationClient({
                 {app.deliberation?.status && app.deliberation.status !== 'scheduled' && (
                   <span className={`badge ${getStatusBadgeStyle(app.deliberation.status)}`}>
                     {app.deliberation.status}
+                  </span>
+                )}
+                {app.email_sent && (
+                  <span className="badge text-xs bg-blue-100 text-blue-700">
+                    Email Sent
                   </span>
                 )}
               </div>

@@ -44,6 +44,7 @@ type OldApplication = {
   deck_link: string | null
   stage: string
   submitted_at: string
+  email_sent: boolean | null
 }
 
 type SortOption = 'date-newest' | 'date-oldest' | 'name-az' | 'name-za' | 'stage'
@@ -544,9 +545,16 @@ export default function PipelineClient({
               <p className="text-sm text-gray-500 truncate">{app.founder_names}</p>
             )}
           </div>
-          <span className={`badge ml-2 flex-shrink-0 capitalize ${getStageBadgeStyle(app.stage)}`}>
-            {app.stage}
-          </span>
+          <div className="flex items-center gap-2 ml-2 flex-shrink-0">
+            {app.email_sent && (
+              <span className="badge text-xs bg-blue-100 text-blue-700">
+                Email Sent
+              </span>
+            )}
+            <span className={`badge capitalize ${getStageBadgeStyle(app.stage)}`}>
+              {app.stage}
+            </span>
+          </div>
         </div>
         {app.company_description && (
           <p className="text-sm text-gray-600 line-clamp-2 mb-2">

@@ -71,6 +71,7 @@ export default async function DeliberationPage() {
       stage: app.stage,
       votes,
       deliberation,
+      email_sent: app.email_sent,
     }
   }) || []
 

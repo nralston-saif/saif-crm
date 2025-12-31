@@ -22,16 +22,25 @@ type EmailAssignment = {
   email_sent: boolean | null
 }
 
+type AllEmailAssignment = EmailAssignment & {
+  assignedTo: string
+}
+
+type EmailTab = 'my-pending' | 'all-pending' | 'all-sent'
+
 export default function DashboardClient({
   needsVote,
-  emailAssignments,
+  myEmailAssignments,
+  allEmailAssignments,
   userId,
 }: {
   needsVote: NeedsVoteApp[]
-  emailAssignments: EmailAssignment[]
+  myEmailAssignments: EmailAssignment[]
+  allEmailAssignments: AllEmailAssignment[]
   userId: string
 }) {
   const [updatingEmail, setUpdatingEmail] = useState<string | null>(null)
+  const [emailTab, setEmailTab] = useState<EmailTab>('my-pending')
   const router = useRouter()
   const supabase = createClient()
 
@@ -57,8 +66,81 @@ export default function DashboardClient({
     })
   }
 
-  const pendingEmails = emailAssignments.filter(app => !app.email_sent)
-  const sentEmails = emailAssignments.filter(app => app.email_sent)
+  // My emails
+  const myPendingEmails = myEmailAssignments.filter(app => !app.email_sent)
+  const mySentEmails = myEmailAssignments.filter(app => app.email_sent)
+
+  // All emails
+  const allPendingEmails = allEmailAssignments.filter(app => !app.email_sent)
+  const allSentEmails = allEmailAssignments.filter(app => app.email_sent)
+
+  const getTabCount = (tab: EmailTab) => {
+    switch (tab) {
+      case 'my-pending': return myPendingEmails.length
+      case 'all-pending': return allPendingEmails.length
+      case 'all-sent': return allSentEmails.length
+    }
+  }
+
+  const renderEmailItem = (app: EmailAssignment | AllEmailAssignment, showAssignee: boolean = false) => {
+    const isSent = app.email_sent
+    const assignedTo = 'assignedTo' in app ? app.assignedTo : null
+
+    return (
+      <div key={app.id} className="p-4 hover:bg-gray-50 transition-colors">
+        <div className="flex items-start gap-3">
+          <button
+            onClick={() => handleToggleEmailSent(app.id, app.email_sent)}
+            disabled={updatingEmail === app.id}
+            className={`mt-0.5 flex-shrink-0 w-5 h-5 border-2 rounded transition-colors disabled:opacity-50 ${
+              isSent
+                ? 'bg-emerald-500 border-emerald-500'
+                : 'border-gray-300 hover:border-gray-400'
+            }`}
+            title={isSent ? 'Mark as not sent' : 'Mark as sent'}
+          >
+            {isSent && (
+              <svg className="w-full h-full text-white p-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+          </button>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className={`font-medium truncate ${isSent ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
+                {app.company_name}
+              </h3>
+              <span className={`badge text-xs ${
+                app.stage === 'deliberation'
+                  ? 'bg-amber-100 text-amber-700'
+                  : 'bg-red-100 text-red-700'
+              }`}>
+                {app.stage}
+              </span>
+              {showAssignee && assignedTo && (
+                <span className="badge text-xs bg-blue-100 text-blue-700">
+                  {assignedTo}
+                </span>
+              )}
+            </div>
+            {app.founder_names && (
+              <p className={`text-sm truncate ${isSent ? 'text-gray-400' : 'text-gray-500'}`}>
+                {app.founder_names}
+              </p>
+            )}
+            {app.primary_email && (
+              <a
+                href={`mailto:${app.primary_email}`}
+                className={`text-sm hover:underline ${isSent ? 'text-gray-400' : 'text-blue-600 hover:text-blue-700'}`}
+              >
+                {app.primary_email}
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -142,95 +224,86 @@ export default function DashboardClient({
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">Email Follow-ups</h2>
                 <p className="text-sm text-gray-500">
-                  {pendingEmails.length} pending, {sentEmails.length} sent
+                  {myPendingEmails.length} yours pending, {mySentEmails.length} sent
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="divide-y divide-gray-100">
-            {emailAssignments.length === 0 ? (
-              <div className="p-6 text-center">
-                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-gray-400 text-xl">📭</span>
-                </div>
-                <p className="text-gray-600">No email assignments</p>
-                <p className="text-sm text-gray-400">You'll see assignments here when companies are moved to deliberation or rejected</p>
-              </div>
-            ) : (
-              <>
-                {/* Pending Emails */}
-                {pendingEmails.map((app) => (
-                  <div key={app.id} className="p-4 hover:bg-gray-50 transition-colors">
-                    <div className="flex items-start gap-3">
-                      <button
-                        onClick={() => handleToggleEmailSent(app.id, app.email_sent)}
-                        disabled={updatingEmail === app.id}
-                        className="mt-0.5 flex-shrink-0 w-5 h-5 border-2 border-gray-300 rounded hover:border-gray-400 transition-colors disabled:opacity-50"
-                        title="Mark as sent"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-medium text-gray-900 truncate">{app.company_name}</h3>
-                          <span className={`badge text-xs ${
-                            app.stage === 'deliberation'
-                              ? 'bg-amber-100 text-amber-700'
-                              : 'bg-red-100 text-red-700'
-                          }`}>
-                            {app.stage}
-                          </span>
-                        </div>
-                        {app.founder_names && (
-                          <p className="text-sm text-gray-500 truncate">{app.founder_names}</p>
-                        )}
-                        {app.primary_email && (
-                          <a
-                            href={`mailto:${app.primary_email}`}
-                            className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
-                          >
-                            {app.primary_email}
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+          {/* Tabs */}
+          <div className="border-b border-gray-100">
+            <div className="flex">
+              {[
+                { id: 'my-pending' as EmailTab, label: 'My Pending' },
+                { id: 'all-pending' as EmailTab, label: 'All Pending' },
+                { id: 'all-sent' as EmailTab, label: 'All Sent' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setEmailTab(tab.id)}
+                  className={`flex-1 px-4 py-3 text-sm font-medium transition-colors relative ${
+                    emailTab === tab.id
+                      ? 'text-[#1a1a1a]'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {tab.label}
+                  <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-xs ${
+                    emailTab === tab.id
+                      ? 'bg-[#1a1a1a] text-white'
+                      : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    {getTabCount(tab.id)}
+                  </span>
+                  {emailTab === tab.id && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#1a1a1a]" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
 
-                {/* Sent Emails (collapsed) */}
-                {sentEmails.length > 0 && (
-                  <div className="p-4 bg-gray-50">
-                    <p className="text-sm font-medium text-gray-500 mb-3">
-                      Sent ({sentEmails.length})
-                    </p>
-                    <div className="space-y-2">
-                      {sentEmails.map((app) => (
-                        <div key={app.id} className="flex items-center gap-3">
-                          <button
-                            onClick={() => handleToggleEmailSent(app.id, app.email_sent)}
-                            disabled={updatingEmail === app.id}
-                            className="flex-shrink-0 w-5 h-5 bg-emerald-500 border-2 border-emerald-500 rounded flex items-center justify-center disabled:opacity-50"
-                            title="Mark as not sent"
-                          >
-                            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                            </svg>
-                          </button>
-                          <span className="text-sm text-gray-500 line-through truncate">
-                            {app.company_name}
-                          </span>
-                          <span className={`badge text-xs ${
-                            app.stage === 'deliberation'
-                              ? 'bg-amber-100 text-amber-700'
-                              : 'bg-red-100 text-red-700'
-                          }`}>
-                            {app.stage}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+          <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
+            {emailTab === 'my-pending' && (
+              myPendingEmails.length === 0 ? (
+                <div className="p-6 text-center">
+                  <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <span className="text-emerald-600 text-xl">✓</span>
                   </div>
-                )}
-              </>
+                  <p className="text-gray-600">All caught up!</p>
+                  <p className="text-sm text-gray-400">No pending emails assigned to you</p>
+                </div>
+              ) : (
+                myPendingEmails.map(app => renderEmailItem(app, false))
+              )
+            )}
+
+            {emailTab === 'all-pending' && (
+              allPendingEmails.length === 0 ? (
+                <div className="p-6 text-center">
+                  <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <span className="text-emerald-600 text-xl">✓</span>
+                  </div>
+                  <p className="text-gray-600">Team is all caught up!</p>
+                  <p className="text-sm text-gray-400">No pending emails for anyone</p>
+                </div>
+              ) : (
+                allPendingEmails.map(app => renderEmailItem(app, true))
+              )
+            )}
+
+            {emailTab === 'all-sent' && (
+              allSentEmails.length === 0 ? (
+                <div className="p-6 text-center">
+                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <span className="text-gray-400 text-xl">📭</span>
+                  </div>
+                  <p className="text-gray-600">No sent emails yet</p>
+                  <p className="text-sm text-gray-400">Sent emails will appear here</p>
+                </div>
+              ) : (
+                allSentEmails.map(app => renderEmailItem(app, true))
+              )
             )}
           </div>
         </section>

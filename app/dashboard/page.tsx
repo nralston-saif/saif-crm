@@ -47,11 +47,28 @@ export default async function DashboardPage() {
     submitted_at: app.submitted_at,
   })) || []
 
-  // Get applications assigned to user for email follow-up
-  const { data: emailAssignments } = await supabase
+  // Get applications assigned to current user for email follow-up
+  const { data: myEmailAssignments } = await supabase
     .from('applications')
     .select('id, company_name, founder_names, primary_email, stage, email_sent')
     .eq('email_sender_id', user.id)
+    .in('stage', ['deliberation', 'rejected'])
+    .order('submitted_at', { ascending: false })
+
+  // Get ALL email assignments (from all users) for the team view
+  const { data: allEmailAssignments } = await supabase
+    .from('applications')
+    .select(`
+      id,
+      company_name,
+      founder_names,
+      primary_email,
+      stage,
+      email_sent,
+      email_sender_id,
+      users!applications_email_sender_id_fkey(name)
+    `)
+    .not('email_sender_id', 'is', null)
     .in('stage', ['deliberation', 'rejected'])
     .order('submitted_at', { ascending: false })
 
@@ -60,7 +77,11 @@ export default async function DashboardPage() {
       <Navigation userName={profile?.name || user.email || 'User'} />
       <DashboardClient
         needsVote={needsVote}
-        emailAssignments={emailAssignments || []}
+        myEmailAssignments={myEmailAssignments || []}
+        allEmailAssignments={allEmailAssignments?.map(app => ({
+          ...app,
+          assignedTo: (app.users as any)?.name || 'Unknown'
+        })) || []}
         userId={user.id}
       />
     </div>
