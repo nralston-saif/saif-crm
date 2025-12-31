@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
 
     // Insert into Supabase
     const { data, error } = await supabase
-      .from('applications')
+      .from('saifcrm_applications')
       .insert(application)
       .select()
       .single()

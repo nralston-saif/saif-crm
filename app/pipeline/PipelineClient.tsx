@@ -138,7 +138,7 @@ export default function PipelineClient({
 
     try {
       const { error } = await supabase
-        .from('votes')
+        .from('saifcrm_votes')
         .upsert({
           application_id: selectedApp.id,
           user_id: userId,
@@ -158,7 +158,7 @@ export default function PipelineClient({
       // Update application stage to 'voting' if it was 'new'
       if (selectedApp.voteCount === 0) {
         await supabase
-          .from('applications')
+          .from('saifcrm_applications')
           .update({ stage: 'voting' })
           .eq('id', selectedApp.id)
       }
@@ -198,7 +198,7 @@ export default function PipelineClient({
       const newStage = action === 'deliberation' ? 'deliberation' : 'rejected'
 
       const { error } = await supabase
-        .from('applications')
+        .from('saifcrm_applications')
         .update({
           stage: newStage,
           votes_revealed: true,
@@ -230,7 +230,7 @@ export default function PipelineClient({
     try {
       // Update application stage to deliberation and reveal votes
       const { error } = await supabase
-        .from('applications')
+        .from('saifcrm_applications')
         .update({
           stage: 'deliberation',
           votes_revealed: true
@@ -260,7 +260,7 @@ export default function PipelineClient({
     try {
       // Update application stage to deliberation and reveal votes
       const { error } = await supabase
-        .from('applications')
+        .from('saifcrm_applications')
         .update({
           stage: 'deliberation',
           votes_revealed: true

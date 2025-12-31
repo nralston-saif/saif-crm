@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
 
     // Search applications
     const { data: applications, error: appError } = await supabase
-      .from('applications')
+      .from('saifcrm_applications')
       .select('id, company_name, founder_names, company_description, stage, submitted_at')
       .or(`company_name.ilike.${searchPattern},founder_names.ilike.${searchPattern},company_description.ilike.${searchPattern}`)
       .order('submitted_at', { ascending: false })
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
 
     // Search investments
     const { data: investments, error: invError } = await supabase
-      .from('investments')
+      .from('saifcrm_investments')
       .select('id, company_name, founders, description, amount, investment_date')
       .or(`company_name.ilike.${searchPattern},founders.ilike.${searchPattern},description.ilike.${searchPattern}`)
       .order('investment_date', { ascending: false })

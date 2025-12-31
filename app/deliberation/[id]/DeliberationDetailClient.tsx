@@ -64,7 +64,7 @@ export default function DeliberationDetailClient({
   const handleSaveDeliberation = async () => {
     setLoading(true)
     try {
-      const { error } = await supabase.from('deliberations').upsert(
+      const { error } = await supabase.from('saifcrm_deliberations').upsert(
         {
           application_id: application.id,
           idea_summary: ideaSummary || null,

@@ -16,24 +16,24 @@ export default async function PortfolioPage() {
 
   // Get user profile
   const { data: profile } = await supabase
-    .from('users')
+    .from('saifcrm_users')
     .select('name')
     .eq('id', user.id)
     .single()
 
   // Get all investments
   const { data: investments } = await supabase
-    .from('investments')
+    .from('saifcrm_investments')
     .select('*')
     .order('investment_date', { ascending: false })
 
   // Get applications with deliberation notes to map to investments by company name
   const { data: applications } = await supabase
-    .from('applications')
+    .from('saifcrm_applications')
     .select(`
       id,
       company_name,
-      deliberation:deliberations(thoughts)
+      deliberation:saifcrm_deliberations(thoughts)
     `)
 
   // Create a map of company name -> notes

@@ -75,7 +75,7 @@ export default function DashboardClient({
     setUpdatingEmail(appId)
 
     const { error } = await supabase
-      .from('applications')
+      .from('saifcrm_applications')
       .update({ email_sent: !currentState })
       .eq('id', appId)
 

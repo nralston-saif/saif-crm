@@ -157,7 +157,7 @@ export default function DeliberationClient({
     try {
       // Save deliberation
       const { error } = await supabase
-        .from('deliberations')
+        .from('saifcrm_deliberations')
         .upsert({
           application_id: selectedApp.id,
           idea_summary: ideaSummary || null,
@@ -179,7 +179,7 @@ export default function DeliberationClient({
       if (decision === 'yes') {
         // Create investment record
         const { error: investmentError } = await supabase
-          .from('investments')
+          .from('saifcrm_investments')
           .insert({
             company_name: selectedApp.company_name,
             investment_date: investmentDate,
@@ -203,13 +203,13 @@ export default function DeliberationClient({
 
         // Update application stage to invested
         await supabase
-          .from('applications')
+          .from('saifcrm_applications')
           .update({ stage: 'invested' })
           .eq('id', selectedApp.id)
       } else if (decision === 'no') {
         // Update application stage to rejected
         await supabase
-          .from('applications')
+          .from('saifcrm_applications')
           .update({ stage: 'rejected' })
           .eq('id', selectedApp.id)
       }

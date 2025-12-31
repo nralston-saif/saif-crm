@@ -16,26 +16,26 @@ export default async function DeliberationPage() {
 
   // Get user profile
   const { data: profile } = await supabase
-    .from('users')
+    .from('saifcrm_users')
     .select('name')
     .eq('id', user.id)
     .single()
 
   // Get applications in deliberation with all votes revealed
   const { data: applications } = await supabase
-    .from('applications')
+    .from('saifcrm_applications')
     .select(`
       *,
-      votes(id, vote, user_id, notes, vote_type, users(name)),
-      deliberations(*),
-      email_sender:users!applications_email_sender_id_fkey(name)
+      saifcrm_votes(id, vote, user_id, notes, vote_type, saifcrm_users(name)),
+      saifcrm_deliberations(*),
+      email_sender:saifcrm_users!applications_email_sender_id_fkey(name)
     `)
     .eq('stage', 'deliberation')
     .eq('votes_revealed', true)
 
   // Get all users for reference
   const { data: users } = await supabase
-    .from('users')
+    .from('saifcrm_users')
     .select('id, name')
 
   const usersMap = new Map(users?.map((u) => [u.id, u.name]) || [])
@@ -43,19 +43,19 @@ export default async function DeliberationPage() {
   // Transform applications to include vote breakdown
   const applicationsWithVotes = applications?.map((app) => {
     // Filter to only initial votes
-    const initialVotes = app.votes?.filter((v: any) => v.vote_type === 'initial') || []
+    const initialVotes = app.saifcrm_votes?.filter((v: any) => v.vote_type === 'initial') || []
 
     const votes = initialVotes.map((v: any) => ({
       userId: v.user_id,
-      userName: v.users?.name || usersMap.get(v.user_id) || 'Unknown',
+      userName: v.saifcrm_users?.name || usersMap.get(v.user_id) || 'Unknown',
       vote: v.vote,
       notes: v.notes,
     }))
 
     // Handle deliberations being returned as object (one-to-one) or array (one-to-many)
-    const deliberation = Array.isArray(app.deliberations)
-      ? app.deliberations[0]
-      : app.deliberations || null
+    const deliberation = Array.isArray(app.saifcrm_deliberations)
+      ? app.saifcrm_deliberations[0]
+      : app.saifcrm_deliberations || null
 
     return {
       id: app.id,

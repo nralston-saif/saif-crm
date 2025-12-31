@@ -16,48 +16,48 @@ export default async function PipelinePage() {
 
   // Get user profile
   const { data: profile } = await supabase
-    .from('users')
+    .from('saifcrm_users')
     .select('name')
     .eq('id', user.id)
     .single()
 
   // Get applications in pipeline with votes and user info
   const { data: applications } = await supabase
-    .from('applications')
+    .from('saifcrm_applications')
     .select(`
       *,
-      votes(id, vote, user_id, notes, vote_type, users(name))
+      saifcrm_votes(id, vote, user_id, notes, vote_type, saifcrm_users(name))
     `)
     .in('stage', ['new', 'voting'])
     .order('submitted_at', { ascending: false })
 
   // Get old/archived applications (already processed) with email sender info
   const { data: oldApplications } = await supabase
-    .from('applications')
+    .from('saifcrm_applications')
     .select(`
       *,
-      email_sender:users!applications_email_sender_id_fkey(name)
+      email_sender:saifcrm_users!applications_email_sender_id_fkey(name)
     `)
     .in('stage', ['deliberation', 'invested', 'rejected'])
     .order('submitted_at', { ascending: false })
 
   // Get all partners for email sender selection
   const { data: partners } = await supabase
-    .from('users')
+    .from('saifcrm_users')
     .select('id, name')
     .order('name')
 
   // Transform applications to include vote counts and user's vote
   const applicationsWithVotes = applications?.map((app) => {
     // Filter to only initial votes
-    const initialVotes = app.votes?.filter((v: any) => v.vote_type === 'initial') || []
+    const initialVotes = app.saifcrm_votes?.filter((v: any) => v.vote_type === 'initial') || []
     const voteCount = initialVotes.length
     const userVote = initialVotes.find((v: any) => v.user_id === user.id)
 
     // Map votes with user names for display when revealed
     const votesWithNames = initialVotes.map((v: any) => ({
       oduserId: v.user_id,
-      userName: v.users?.name || 'Unknown',
+      userName: v.saifcrm_users?.name || 'Unknown',
       vote: v.vote,
       notes: v.notes,
     }))

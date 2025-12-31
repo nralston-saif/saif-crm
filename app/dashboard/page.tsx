@@ -16,28 +16,28 @@ export default async function DashboardPage() {
 
   // Get user profile
   const { data: profile } = await supabase
-    .from('users')
+    .from('saifcrm_users')
     .select('name')
     .eq('id', user.id)
     .single()
 
   // Get applications in pipeline that need user's vote
   const { data: pipelineApps } = await supabase
-    .from('applications')
+    .from('saifcrm_applications')
     .select(`
       id,
       company_name,
       founder_names,
       company_description,
       submitted_at,
-      votes(id, user_id, vote_type)
+      saifcrm_votes(id, user_id, vote_type)
     `)
     .in('stage', ['new', 'voting'])
     .order('submitted_at', { ascending: false })
 
   // Filter to apps that need user's vote
   const needsVote = pipelineApps?.filter((app) => {
-    const initialVotes = app.votes?.filter((v: any) => v.vote_type === 'initial') || []
+    const initialVotes = app.saifcrm_votes?.filter((v: any) => v.vote_type === 'initial') || []
     return !initialVotes.some((v: any) => v.user_id === user.id)
   }).map(app => ({
     id: app.id,
@@ -49,7 +49,7 @@ export default async function DashboardPage() {
 
   // Get applications assigned to current user for email follow-up
   const { data: myEmailAssignments } = await supabase
-    .from('applications')
+    .from('saifcrm_applications')
     .select('id, company_name, founder_names, primary_email, stage, email_sent')
     .eq('email_sender_id', user.id)
     .in('stage', ['deliberation', 'rejected'])
@@ -57,7 +57,7 @@ export default async function DashboardPage() {
 
   // Get ALL email assignments (from all users) for the team view
   const { data: allEmailAssignments } = await supabase
-    .from('applications')
+    .from('saifcrm_applications')
     .select(`
       id,
       company_name,
@@ -66,7 +66,7 @@ export default async function DashboardPage() {
       stage,
       email_sent,
       email_sender_id,
-      users!applications_email_sender_id_fkey(name)
+      saifcrm_users!applications_email_sender_id_fkey(name)
     `)
     .not('email_sender_id', 'is', null)
     .in('stage', ['deliberation', 'rejected'])
@@ -74,20 +74,20 @@ export default async function DashboardPage() {
 
   // Get companies in deliberation needing decision
   const { data: deliberationApps } = await supabase
-    .from('applications')
+    .from('saifcrm_applications')
     .select(`
       id,
       company_name,
       founder_names,
       submitted_at,
-      deliberations(decision)
+      saifcrm_deliberations(decision)
     `)
     .eq('stage', 'deliberation')
     .order('submitted_at', { ascending: false })
 
   // Filter to those without a final decision
   const needsDecision = deliberationApps?.filter(app => {
-    const delib = Array.isArray(app.deliberations) ? app.deliberations[0] : app.deliberations
+    const delib = Array.isArray(app.saifcrm_deliberations) ? app.saifcrm_deliberations[0] : app.saifcrm_deliberations
     const decision = (delib as any)?.decision
     return !decision || decision === 'pending' || decision === 'maybe'
   }).map(app => ({
@@ -99,7 +99,7 @@ export default async function DashboardPage() {
 
   // Get pipeline stats
   const { data: allApps } = await supabase
-    .from('applications')
+    .from('saifcrm_applications')
     .select('stage')
 
   const stats = {
@@ -120,7 +120,7 @@ export default async function DashboardPage() {
         myEmailAssignments={myEmailAssignments || []}
         allEmailAssignments={allEmailAssignments?.map(app => ({
           ...app,
-          assignedTo: (app.users as any)?.name || 'Unknown'
+          assignedTo: (app.saifcrm_users as any)?.name || 'Unknown'
         })) || []}
         needsDecision={needsDecision}
         stats={stats}

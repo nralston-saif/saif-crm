@@ -161,7 +161,7 @@ function MeetingNotesInput({
     setSaving(true)
     setShowConfirm(false)
     try {
-      const { error } = await supabase.from('meeting_notes').insert({
+      const { error } = await supabase.from('saifcrm_meeting_notes').insert({
         application_id: applicationId,
         user_id: userId,
         content: content.trim(),
@@ -279,8 +279,8 @@ function NotesList({
 
   const fetchNotes = useCallback(async () => {
     const { data, error } = await supabase
-      .from('meeting_notes')
-      .select('*, users(name)')
+      .from('saifcrm_meeting_notes')
+      .select('*, saifcrm_users(name)')
       .eq('application_id', applicationId)
       .order('meeting_date', { ascending: false })
       .order('created_at', { ascending: false })
@@ -289,7 +289,7 @@ function NotesList({
       setNotes(
         data.map((note: any) => ({
           ...note,
-          user_name: note.users?.name || 'Unknown',
+          user_name: note.saifcrm_users?.name || 'Unknown',
         }))
       )
     }
@@ -310,7 +310,7 @@ function NotesList({
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'meeting_notes',
+          table: 'saifcrm_meeting_notes',
           filter: `application_id=eq.${applicationId}`,
         },
         () => {
@@ -490,7 +490,7 @@ function MeetingNotesWithoutLive({ applicationId, userId, userName, deliberation
 
     setSaving(true)
     try {
-      const { error } = await supabase.from('meeting_notes').insert({
+      const { error } = await supabase.from('saifcrm_meeting_notes').insert({
         application_id: applicationId,
         user_id: userId,
         content: content.trim(),

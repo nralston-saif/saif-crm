@@ -129,7 +129,7 @@ export default function PortfolioClient({
 
       if (formData.id) {
         const { error } = await supabase
-          .from('investments')
+          .from('saifcrm_investments')
           .update(dataToSave)
           .eq('id', formData.id)
 
@@ -140,7 +140,7 @@ export default function PortfolioClient({
         }
       } else {
         const { error } = await supabase
-          .from('investments')
+          .from('saifcrm_investments')
           .insert(dataToSave)
 
         if (error) {
