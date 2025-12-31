@@ -109,36 +109,8 @@ export default async function DashboardPage() {
     rejected: allApps?.filter(a => a.stage === 'rejected').length || 0,
   }
 
-  // Get notifications: companies with 3 votes ready to advance
-  const readyToAdvance = pipelineApps?.filter(app => {
-    const initialVotes = app.votes?.filter((v: any) => v.vote_type === 'initial') || []
-    return initialVotes.length >= 3
-  }).map(app => ({
-    id: app.id,
-    company_name: app.company_name,
-    type: 'ready' as const,
-  })) || []
-
-  // Get recent deliberation notes (apps with deliberations updated recently)
-  const { data: recentDelibs } = await supabase
-    .from('deliberations')
-    .select(`
-      application_id,
-      updated_at,
-      applications(id, company_name)
-    `)
-    .not('idea_summary', 'is', null)
-    .order('updated_at', { ascending: false })
-    .limit(5)
-
-  const recentNotes = recentDelibs?.map(d => ({
-    id: (d.applications as any)?.id,
-    company_name: (d.applications as any)?.company_name,
-    type: 'notes' as const,
-    updated_at: d.updated_at,
-  })).filter(n => n.id) || []
-
-  const notifications = [...readyToAdvance, ...recentNotes]
+  // Notifications - cleared for fresh start
+  const notifications: { id: string; company_name: string; type: 'ready' | 'notes'; updated_at?: string }[] = []
 
   return (
     <div className="min-h-screen bg-gray-50">

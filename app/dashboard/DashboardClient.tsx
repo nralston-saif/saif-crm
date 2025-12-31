@@ -190,59 +190,8 @@ export default function DashboardClient({
         <p className="mt-1 text-gray-500">Your tasks at a glance</p>
       </div>
 
-      {/* Pipeline Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-        <Link href="/pipeline" className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow">
-          <div className="text-3xl font-bold text-[#1a1a1a]">{stats.pipeline}</div>
-          <div className="text-sm text-gray-500">In Pipeline</div>
-        </Link>
-        <Link href="/deliberation" className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow">
-          <div className="text-3xl font-bold text-amber-600">{stats.deliberation}</div>
-          <div className="text-sm text-gray-500">In Deliberation</div>
-        </Link>
-        <Link href="/portfolio" className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow">
-          <div className="text-3xl font-bold text-emerald-600">{stats.invested}</div>
-          <div className="text-sm text-gray-500">Invested</div>
-        </Link>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-          <div className="text-3xl font-bold text-red-600">{stats.rejected}</div>
-          <div className="text-sm text-gray-500">Rejected</div>
-        </div>
-      </div>
-
-      {/* Notifications */}
-      {notifications.length > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-8">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-blue-600 text-lg">🔔</span>
-            <h2 className="font-semibold text-blue-900">Notifications</h2>
-          </div>
-          <div className="space-y-2">
-            {notifications.map((notif, i) => (
-              <Link
-                key={`${notif.id}-${i}`}
-                href={notif.type === 'ready' ? `/pipeline#app-${notif.id}` : `/deliberation/${notif.id}`}
-                className="flex items-center gap-3 p-2 bg-white rounded-lg hover:bg-blue-100 transition-colors"
-              >
-                <span className="text-lg">
-                  {notif.type === 'ready' ? '✅' : '📝'}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <span className="font-medium text-gray-900">{notif.company_name}</span>
-                  <span className="text-gray-500 ml-2">
-                    {notif.type === 'ready' ? 'has 3 votes - ready to advance' : 'has new deliberation notes'}
-                  </span>
-                </div>
-                {notif.updated_at && (
-                  <span className="text-xs text-gray-400">{formatTimeAgo(notif.updated_at)}</span>
-                )}
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="grid gap-8 lg:grid-cols-2">
+      {/* Top Row: Needs Your Vote + Needs Decision */}
+      <div className="grid gap-8 lg:grid-cols-2 mb-8">
         {/* Needs Your Vote Section */}
         <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="p-6 border-b border-gray-100">
@@ -363,7 +312,10 @@ export default function DashboardClient({
             </div>
           )}
         </section>
+      </div>
 
+      {/* Bottom Row: Email Follow-ups + Notifications */}
+      <div className="grid gap-8 lg:grid-cols-3">
         {/* Email Follow-ups Section */}
         <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden lg:col-span-2">
           <div className="p-6 border-b border-gray-100">
@@ -454,6 +406,56 @@ export default function DashboardClient({
               ) : (
                 allSentEmails.map(app => renderEmailItem(app, true))
               )
+            )}
+          </div>
+        </section>
+
+        {/* Notifications Section */}
+        <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="p-6 border-b border-gray-100">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-xl">
+                <span className="text-blue-600 text-xl">🔔</span>
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Notifications</h2>
+                <p className="text-sm text-gray-500">{notifications.length} update{notifications.length !== 1 ? 's' : ''}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="divide-y divide-gray-100 max-h-64 overflow-y-auto">
+            {notifications.length === 0 ? (
+              <div className="p-6 text-center">
+                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <span className="text-gray-400 text-xl">🔔</span>
+                </div>
+                <p className="text-gray-600">No notifications</p>
+                <p className="text-sm text-gray-400">You're all caught up</p>
+              </div>
+            ) : (
+              notifications.map((notif, i) => (
+                <Link
+                  key={`${notif.id}-${i}`}
+                  href={notif.type === 'ready' ? `/pipeline#app-${notif.id}` : `/deliberation/${notif.id}`}
+                  className="block p-4 hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="text-lg flex-shrink-0">
+                      {notif.type === 'ready' ? '✅' : '📝'}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-gray-900 truncate">{notif.company_name}</h3>
+                      <p className="text-sm text-gray-500">
+                        {notif.type === 'ready' ? '3 votes - ready to advance' : 'New deliberation notes'}
+                      </p>
+                      {notif.updated_at && (
+                        <p className="text-xs text-gray-400 mt-1">{formatTimeAgo(notif.updated_at)}</p>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              ))
             )}
           </div>
         </section>
