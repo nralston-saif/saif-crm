@@ -136,17 +136,30 @@ function MeetingNotesInput({
     return new Date().toISOString().split('T')[0]
   })
   const [saving, setSaving] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
   const supabase = createClient()
+  const others = useOthers()
+
+  // Check if others are currently typing
+  const othersTyping = others.filter((user) => user.presence.isTyping)
+  const typingNames = othersTyping.map((user) => user.presence.name || 'Someone')
 
   // Mutation to clear the shared draft after saving
   const clearDraft = useMutation(({ storage }) => {
     storage.set('draft', '')
   }, [])
 
-  const handleAddNote = async () => {
+  const handleFinalizeNote = async () => {
     if (!content.trim()) return
 
+    // If others are typing, show confirmation first
+    if (othersTyping.length > 0 && !showConfirm) {
+      setShowConfirm(true)
+      return
+    }
+
     setSaving(true)
+    setShowConfirm(false)
     try {
       const { error } = await supabase.from('meeting_notes').insert({
         application_id: applicationId,
@@ -188,7 +201,7 @@ function MeetingNotesInput({
         </div>
         <div className="flex items-center gap-2 pt-6">
           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-          <span className="text-sm text-gray-500">Live Collaboration</span>
+          <span className="text-sm text-gray-500">Draft synced</span>
         </div>
       </div>
 
@@ -197,25 +210,51 @@ function MeetingNotesInput({
         onContentChange={handleContentChange}
       />
 
-      <div className="mt-4 flex justify-end">
-        <button
-          onClick={handleAddNote}
-          disabled={saving || !content.trim()}
-          className="btn btn-primary"
-        >
-          {saving ? (
-            <span className="flex items-center gap-2">
-              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-              </svg>
-              Saving...
-            </span>
-          ) : (
-            'Save Note'
-          )}
-        </button>
-      </div>
+      {/* Confirmation warning when others are typing */}
+      {showConfirm && (
+        <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-4">
+          <p className="text-amber-800 text-sm mb-3">
+            <strong>{typingNames.join(', ')}</strong> {typingNames.length === 1 ? 'is' : 'are'} still typing.
+            Finalizing will save the current draft and clear it for everyone.
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowConfirm(false)}
+              className="btn btn-secondary text-sm"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleFinalizeNote}
+              className="btn btn-primary text-sm"
+            >
+              Finalize Anyway
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!showConfirm && (
+        <div className="mt-4 flex justify-end">
+          <button
+            onClick={handleFinalizeNote}
+            disabled={saving || !content.trim()}
+            className="btn btn-primary"
+          >
+            {saving ? (
+              <span className="flex items-center gap-2">
+                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Saving...
+              </span>
+            ) : (
+              'Finalize Note'
+            )}
+          </button>
+        </div>
+      )}
     </div>
   )
 }
