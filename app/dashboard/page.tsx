@@ -16,7 +16,7 @@ export default async function DashboardPage() {
 
   // Get user profile
   const { data: profile } = await supabase
-    .from('saifcrm_users')
+    .from('saif_users')
     .select('name')
     .eq('id', user.id)
     .single()
@@ -66,7 +66,7 @@ export default async function DashboardPage() {
       stage,
       email_sent,
       email_sender_id,
-      saifcrm_users!applications_email_sender_id_fkey(name)
+      saif_users!applications_email_sender_id_fkey(name)
     `)
     .not('email_sender_id', 'is', null)
     .in('stage', ['deliberation', 'rejected'])
@@ -120,7 +120,7 @@ export default async function DashboardPage() {
         myEmailAssignments={myEmailAssignments || []}
         allEmailAssignments={allEmailAssignments?.map(app => ({
           ...app,
-          assignedTo: (app.saifcrm_users as any)?.name || 'Unknown'
+          assignedTo: (app.saif_users as any)?.name || 'Unknown'
         })) || []}
         needsDecision={needsDecision}
         stats={stats}

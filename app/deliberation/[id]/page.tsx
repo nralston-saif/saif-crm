@@ -21,7 +21,7 @@ export default async function DeliberationDetailPage({
 
   // Get user profile
   const { data: profile } = await supabase
-    .from('saifcrm_users')
+    .from('saif_users')
     .select('name')
     .eq('id', user.id)
     .single()
@@ -31,7 +31,7 @@ export default async function DeliberationDetailPage({
     .from('saifcrm_applications')
     .select(`
       *,
-      saifcrm_votes(id, vote, user_id, notes, vote_type, saifcrm_users(name)),
+      saifcrm_votes(id, vote, user_id, notes, vote_type, saif_users(name)),
       saifcrm_deliberations(*)
     `)
     .eq('id', id)
@@ -43,7 +43,7 @@ export default async function DeliberationDetailPage({
 
   // Get all users for reference
   const { data: users } = await supabase
-    .from('saifcrm_users')
+    .from('saif_users')
     .select('id, name')
 
   const usersMap = new Map(users?.map((u) => [u.id, u.name]) || [])
@@ -52,7 +52,7 @@ export default async function DeliberationDetailPage({
   const initialVotes = application.saifcrm_votes?.filter((v: any) => v.vote_type === 'initial') || []
   const votes = initialVotes.map((v: any) => ({
     oduserId: v.user_id,
-    userName: v.saifcrm_users?.name || usersMap.get(v.user_id) || 'Unknown',
+    userName: v.saif_users?.name || usersMap.get(v.user_id) || 'Unknown',
     vote: v.vote,
     notes: v.notes,
   }))

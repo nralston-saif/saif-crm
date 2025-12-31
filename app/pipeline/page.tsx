@@ -16,7 +16,7 @@ export default async function PipelinePage() {
 
   // Get user profile
   const { data: profile } = await supabase
-    .from('saifcrm_users')
+    .from('saif_users')
     .select('name')
     .eq('id', user.id)
     .single()
@@ -26,7 +26,7 @@ export default async function PipelinePage() {
     .from('saifcrm_applications')
     .select(`
       *,
-      saifcrm_votes(id, vote, user_id, notes, vote_type, saifcrm_users(name))
+      saifcrm_votes(id, vote, user_id, notes, vote_type, saif_users(name))
     `)
     .in('stage', ['new', 'voting'])
     .order('submitted_at', { ascending: false })
@@ -36,14 +36,14 @@ export default async function PipelinePage() {
     .from('saifcrm_applications')
     .select(`
       *,
-      email_sender:saifcrm_users!applications_email_sender_id_fkey(name)
+      email_sender:saif_users!applications_email_sender_id_fkey(name)
     `)
     .in('stage', ['deliberation', 'invested', 'rejected'])
     .order('submitted_at', { ascending: false })
 
   // Get all partners for email sender selection
   const { data: partners } = await supabase
-    .from('saifcrm_users')
+    .from('saif_users')
     .select('id, name')
     .order('name')
 
@@ -57,7 +57,7 @@ export default async function PipelinePage() {
     // Map votes with user names for display when revealed
     const votesWithNames = initialVotes.map((v: any) => ({
       oduserId: v.user_id,
-      userName: v.saifcrm_users?.name || 'Unknown',
+      userName: v.saif_users?.name || 'Unknown',
       vote: v.vote,
       notes: v.notes,
     }))

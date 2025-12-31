@@ -16,7 +16,7 @@ export default async function PortfolioPage() {
 
   // Get user profile
   const { data: profile } = await supabase
-    .from('saifcrm_users')
+    .from('saif_users')
     .select('name')
     .eq('id', user.id)
     .single()
