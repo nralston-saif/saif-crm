@@ -241,7 +241,7 @@ function MeetingNotesInput({
       {!showConfirm && (
         <div className="mt-4 flex justify-end">
           <button
-            onClick={handleFinalizeNote}
+            onClick={() => handleFinalizeNote()}
             disabled={saving || !content.trim()}
             className="btn btn-primary"
           >
