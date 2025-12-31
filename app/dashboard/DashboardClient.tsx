@@ -13,6 +13,13 @@ type NeedsVoteApp = {
   submitted_at: string
 }
 
+type NeedsDecisionApp = {
+  id: string
+  company_name: string
+  founder_names: string | null
+  submitted_at: string
+}
+
 type EmailAssignment = {
   id: string
   company_name: string
@@ -26,17 +33,37 @@ type AllEmailAssignment = EmailAssignment & {
   assignedTo: string
 }
 
+type Stats = {
+  pipeline: number
+  deliberation: number
+  invested: number
+  rejected: number
+}
+
+type Notification = {
+  id: string
+  company_name: string
+  type: 'ready' | 'notes'
+  updated_at?: string
+}
+
 type EmailTab = 'my-pending' | 'all-pending' | 'all-sent'
 
 export default function DashboardClient({
   needsVote,
   myEmailAssignments,
   allEmailAssignments,
+  needsDecision,
+  stats,
+  notifications,
   userId,
 }: {
   needsVote: NeedsVoteApp[]
   myEmailAssignments: EmailAssignment[]
   allEmailAssignments: AllEmailAssignment[]
+  needsDecision: NeedsDecisionApp[]
+  stats: Stats
+  notifications: Notification[]
   userId: string
 }) {
   const [updatingEmail, setUpdatingEmail] = useState<string | null>(null)
@@ -64,6 +91,19 @@ export default function DashboardClient({
       month: 'short',
       day: 'numeric',
     })
+  }
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
+
+    if (diffMins < 60) return `${diffMins}m ago`
+    if (diffHours < 24) return `${diffHours}h ago`
+    return `${diffDays}d ago`
   }
 
   // My emails
@@ -150,6 +190,58 @@ export default function DashboardClient({
         <p className="mt-1 text-gray-500">Your tasks at a glance</p>
       </div>
 
+      {/* Pipeline Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+        <Link href="/pipeline" className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow">
+          <div className="text-3xl font-bold text-[#1a1a1a]">{stats.pipeline}</div>
+          <div className="text-sm text-gray-500">In Pipeline</div>
+        </Link>
+        <Link href="/deliberation" className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow">
+          <div className="text-3xl font-bold text-amber-600">{stats.deliberation}</div>
+          <div className="text-sm text-gray-500">In Deliberation</div>
+        </Link>
+        <Link href="/portfolio" className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow">
+          <div className="text-3xl font-bold text-emerald-600">{stats.invested}</div>
+          <div className="text-sm text-gray-500">Invested</div>
+        </Link>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+          <div className="text-3xl font-bold text-red-600">{stats.rejected}</div>
+          <div className="text-sm text-gray-500">Rejected</div>
+        </div>
+      </div>
+
+      {/* Notifications */}
+      {notifications.length > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-8">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-blue-600 text-lg">🔔</span>
+            <h2 className="font-semibold text-blue-900">Notifications</h2>
+          </div>
+          <div className="space-y-2">
+            {notifications.map((notif, i) => (
+              <Link
+                key={`${notif.id}-${i}`}
+                href={notif.type === 'ready' ? `/pipeline#app-${notif.id}` : `/deliberation/${notif.id}`}
+                className="flex items-center gap-3 p-2 bg-white rounded-lg hover:bg-blue-100 transition-colors"
+              >
+                <span className="text-lg">
+                  {notif.type === 'ready' ? '✅' : '📝'}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <span className="font-medium text-gray-900">{notif.company_name}</span>
+                  <span className="text-gray-500 ml-2">
+                    {notif.type === 'ready' ? 'has 3 votes - ready to advance' : 'has new deliberation notes'}
+                  </span>
+                </div>
+                {notif.updated_at && (
+                  <span className="text-xs text-gray-400">{formatTimeAgo(notif.updated_at)}</span>
+                )}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="grid gap-8 lg:grid-cols-2">
         {/* Needs Your Vote Section */}
         <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -165,7 +257,7 @@ export default function DashboardClient({
             </div>
           </div>
 
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto">
             {needsVote.length === 0 ? (
               <div className="p-6 text-center">
                 <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -214,8 +306,66 @@ export default function DashboardClient({
           )}
         </section>
 
-        {/* Email Follow-ups Section */}
+        {/* Needs Decision Section */}
         <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="p-6 border-b border-gray-100">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-10 h-10 bg-purple-100 rounded-xl">
+                <span className="text-purple-600 text-xl">🤔</span>
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Needs Decision</h2>
+                <p className="text-sm text-gray-500">{needsDecision.length} in deliberation awaiting decision</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto">
+            {needsDecision.length === 0 ? (
+              <div className="p-6 text-center">
+                <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <span className="text-emerald-600 text-xl">✓</span>
+                </div>
+                <p className="text-gray-600">All decisions made!</p>
+                <p className="text-sm text-gray-400">No pending deliberations</p>
+              </div>
+            ) : (
+              needsDecision.map((app) => (
+                <Link
+                  key={app.id}
+                  href={`/deliberation/${app.id}`}
+                  className="block p-4 hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-gray-900 truncate">{app.company_name}</h3>
+                      {app.founder_names && (
+                        <p className="text-sm text-gray-500 truncate">{app.founder_names}</p>
+                      )}
+                    </div>
+                    <span className="text-xs text-gray-400 ml-2 flex-shrink-0">
+                      {formatDate(app.submitted_at)}
+                    </span>
+                  </div>
+                </Link>
+              ))
+            )}
+          </div>
+
+          {needsDecision.length > 0 && (
+            <div className="p-4 bg-gray-50 border-t border-gray-100">
+              <Link
+                href="/deliberation"
+                className="text-sm font-medium text-[#1a1a1a] hover:text-black"
+              >
+                View all in Deliberation →
+              </Link>
+            </div>
+          )}
+        </section>
+
+        {/* Email Follow-ups Section */}
+        <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden lg:col-span-2">
           <div className="p-6 border-b border-gray-100">
             <div className="flex items-center gap-3">
               <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-xl">
@@ -263,7 +413,7 @@ export default function DashboardClient({
             </div>
           </div>
 
-          <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
+          <div className="divide-y divide-gray-100 max-h-64 overflow-y-auto">
             {emailTab === 'my-pending' && (
               myPendingEmails.length === 0 ? (
                 <div className="p-6 text-center">
@@ -308,69 +458,6 @@ export default function DashboardClient({
           </div>
         </section>
       </div>
-
-      {/* Quick Links */}
-      <section className="mt-8">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Links</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Link
-            href="/pipeline"
-            className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-[#f5f5f5] rounded-lg flex items-center justify-center">
-                <span className="text-lg">📊</span>
-              </div>
-              <div>
-                <h3 className="font-medium text-gray-900">Pipeline</h3>
-                <p className="text-sm text-gray-500">Review applications</p>
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            href="/deliberation"
-            className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
-                <span className="text-lg">🤝</span>
-              </div>
-              <div>
-                <h3 className="font-medium text-gray-900">Deliberation</h3>
-                <p className="text-sm text-gray-500">Discuss candidates</p>
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            href="/portfolio"
-            className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-                <span className="text-lg">💼</span>
-              </div>
-              <div>
-                <h3 className="font-medium text-gray-900">Portfolio</h3>
-                <p className="text-sm text-gray-500">View investments</p>
-              </div>
-            </div>
-          </Link>
-
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 opacity-50">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                <span className="text-lg">⚙️</span>
-              </div>
-              <div>
-                <h3 className="font-medium text-gray-900">Settings</h3>
-                <p className="text-sm text-gray-500">Coming soon</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
     </div>
   )
 }
