@@ -72,7 +72,7 @@ function CollaborativeTextArea({
         onChange={handleChange}
         onBlur={handleBlur}
         rows={12}
-        className="input resize-none w-full"
+        className="input resize-y w-full min-h-[300px]"
         placeholder="Type your meeting notes here... Everyone sees changes in real-time!"
       />
 
@@ -486,7 +486,7 @@ function MeetingNotesWithoutLive({ applicationId, userId, userName, deliberation
           value={content}
           onChange={(e) => setContent(e.target.value)}
           rows={12}
-          className="input resize-none w-full"
+          className="input resize-y w-full min-h-[300px]"
           placeholder="Type your meeting notes here..."
         />
 
