@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { RoomProvider, useOthers, useUpdateMyPresence, useSelf, ClientSideSuspense } from '@/lib/liveblocks'
+import { RoomProvider, useOthers, useUpdateMyPresence, useSelf, useStorage, useMutation, ClientSideSuspense } from '@/lib/liveblocks'
+import { LiveObject } from '@liveblocks/client'
 
 type MeetingNote = {
   id: string
@@ -21,25 +22,32 @@ type MeetingNotesProps = {
   deliberationNotes?: string | null
 }
 
-// Collaborative text area component
+// Collaborative text area component with real-time sync
 function CollaborativeTextArea({
-  value,
-  onChange,
   userName,
+  onContentChange,
 }: {
-  value: string
-  onChange: (value: string) => void
   userName: string
+  onContentChange: (value: string) => void
 }) {
   const updateMyPresence = useUpdateMyPresence()
   const others = useOthers()
-  const self = useSelf()
+
+  // Read shared draft from Liveblocks storage
+  const draft = useStorage((root) => root.draft) || ''
+
+  // Mutation to update the shared draft
+  const updateDraft = useMutation(({ storage }, newDraft: string) => {
+    storage.set('draft', newDraft)
+  }, [])
 
   // Get who is typing
   const typingUsers = others.filter((user) => user.presence.isTyping)
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    onChange(e.target.value)
+    const newValue = e.target.value
+    updateDraft(newValue)
+    onContentChange(newValue)
     updateMyPresence({ isTyping: true })
   }
 
@@ -52,15 +60,20 @@ function CollaborativeTextArea({
     updateMyPresence({ name: userName, isTyping: false, cursor: null })
   }, [userName, updateMyPresence])
 
+  // Sync content changes to parent
+  useEffect(() => {
+    onContentChange(draft)
+  }, [draft, onContentChange])
+
   return (
     <div className="relative">
       <textarea
-        value={value}
+        value={draft}
         onChange={handleChange}
         onBlur={handleBlur}
         rows={12}
         className="input resize-none w-full"
-        placeholder="Type your meeting notes here... Others can see when you're typing."
+        placeholder="Type your meeting notes here... Everyone sees changes in real-time!"
       />
 
       {/* Typing indicators */}
@@ -125,6 +138,11 @@ function MeetingNotesInput({
   const [saving, setSaving] = useState(false)
   const supabase = createClient()
 
+  // Mutation to clear the shared draft after saving
+  const clearDraft = useMutation(({ storage }) => {
+    storage.set('draft', '')
+  }, [])
+
   const handleAddNote = async () => {
     if (!content.trim()) return
 
@@ -139,7 +157,9 @@ function MeetingNotesInput({
 
       if (error) throw error
 
+      // Clear both local state and shared draft
       setContent('')
+      clearDraft()
       onNoteAdded()
     } catch (error) {
       console.error('Error saving note:', error)
@@ -147,6 +167,10 @@ function MeetingNotesInput({
       setSaving(false)
     }
   }
+
+  const handleContentChange = useCallback((value: string) => {
+    setContent(value)
+  }, [])
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4">
@@ -164,14 +188,13 @@ function MeetingNotesInput({
         </div>
         <div className="flex items-center gap-2 pt-6">
           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-          <span className="text-sm text-gray-500">Live</span>
+          <span className="text-sm text-gray-500">Live Collaboration</span>
         </div>
       </div>
 
       <CollaborativeTextArea
-        value={content}
-        onChange={setContent}
         userName={userName}
+        onContentChange={handleContentChange}
       />
 
       <div className="mt-4 flex justify-end">
@@ -189,7 +212,7 @@ function MeetingNotesInput({
               Saving...
             </span>
           ) : (
-            'Add Note'
+            'Save Note'
           )}
         </button>
       </div>
