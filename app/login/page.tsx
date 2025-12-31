@@ -30,7 +30,7 @@ export default function LoginPage() {
       }
 
       if (data.user) {
-        router.push('/pipeline')
+        router.push('/dashboard')
         router.refresh()
       }
     } catch (err) {

@@ -219,3 +219,8 @@ body {
 .animate-slide-in {
   animation: slide-in 0.3s ease-out;
 }
+
+/* Scroll margin for anchor links (account for sticky nav) */
+[id^="app-"] {
+  scroll-margin-top: 6rem;
+}

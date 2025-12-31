@@ -317,7 +317,7 @@ export default function DashboardClient({
       {/* Bottom Row: Email Follow-ups + Notifications */}
       <div className="grid gap-8 lg:grid-cols-2">
         {/* Email Follow-ups Section */}
-        <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
           <div className="p-6 border-b border-gray-100">
             <div className="flex items-center gap-3">
               <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-xl">
@@ -365,7 +365,7 @@ export default function DashboardClient({
             </div>
           </div>
 
-          <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto">
+          <div className="divide-y divide-gray-100 flex-1 overflow-y-auto">
             {emailTab === 'my-pending' && (
               myPendingEmails.length === 0 ? (
                 <div className="p-6 text-center">
@@ -411,7 +411,7 @@ export default function DashboardClient({
         </section>
 
         {/* Notifications Section */}
-        <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
           <div className="p-6 border-b border-gray-100">
             <div className="flex items-center gap-3">
               <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-xl">
@@ -424,7 +424,7 @@ export default function DashboardClient({
             </div>
           </div>
 
-          <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto">
+          <div className="divide-y divide-gray-100 flex-1 overflow-y-auto">
             {notifications.length === 0 ? (
               <div className="p-6 text-center">
                 <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
