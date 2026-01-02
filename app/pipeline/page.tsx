@@ -14,11 +14,11 @@ export default async function PipelinePage() {
     redirect('/login')
   }
 
-  // Get user profile
+  // Get user profile (using auth_user_id to link to auth.users)
   const { data: profile } = await supabase
-    .from('saif_users')
-    .select('name')
-    .eq('id', user.id)
+    .from('saif_people')
+    .select('id, name')
+    .eq('auth_user_id', user.id)
     .single()
 
   // Get applications in pipeline with votes and user info
@@ -26,7 +26,7 @@ export default async function PipelinePage() {
     .from('saifcrm_applications')
     .select(`
       *,
-      saifcrm_votes(id, vote, user_id, notes, vote_type, saif_users(name))
+      saifcrm_votes(id, vote, user_id, notes, vote_type, saif_people(name))
     `)
     .in('stage', ['new', 'voting'])
     .order('submitted_at', { ascending: false })
@@ -36,15 +36,17 @@ export default async function PipelinePage() {
     .from('saifcrm_applications')
     .select(`
       *,
-      email_sender:saif_users!applications_email_sender_id_fkey(name)
+      email_sender:saif_people!applications_email_sender_id_fkey(name)
     `)
     .in('stage', ['deliberation', 'invested', 'rejected'])
     .order('submitted_at', { ascending: false })
 
   // Get all partners for email sender selection
   const { data: partners } = await supabase
-    .from('saif_users')
+    .from('saif_people')
     .select('id, name')
+    .eq('role', 'partner')
+    .eq('status', 'active')
     .order('name')
 
   // Transform applications to include vote counts and user's vote
@@ -52,12 +54,13 @@ export default async function PipelinePage() {
     // Filter to only initial votes
     const initialVotes = app.saifcrm_votes?.filter((v: any) => v.vote_type === 'initial') || []
     const voteCount = initialVotes.length
-    const userVote = initialVotes.find((v: any) => v.user_id === user.id)
+    // Compare with person id (profile.id), not auth user id
+    const userVote = initialVotes.find((v: any) => v.user_id === profile?.id)
 
     // Map votes with user names for display when revealed
     const votesWithNames = initialVotes.map((v: any) => ({
       oduserId: v.user_id,
-      userName: v.saif_users?.name || 'Unknown',
+      userName: v.saif_people?.name || 'Unknown',
       vote: v.vote,
       notes: v.notes,
     }))
@@ -91,7 +94,7 @@ export default async function PipelinePage() {
           ...app,
           email_sender_name: (app.email_sender as any)?.name || null
         }))}
-        userId={user.id}
+        userId={profile?.id || ''}
         partners={partners || []}
       />
     </div>

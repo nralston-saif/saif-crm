@@ -14,11 +14,11 @@ export default async function DashboardPage() {
     redirect('/login')
   }
 
-  // Get user profile
+  // Get user profile (using auth_user_id to link to auth.users)
   const { data: profile } = await supabase
-    .from('saif_users')
-    .select('name')
-    .eq('id', user.id)
+    .from('saif_people')
+    .select('id, name')
+    .eq('auth_user_id', user.id)
     .single()
 
   // Get applications in pipeline that need user's vote
@@ -35,10 +35,10 @@ export default async function DashboardPage() {
     .in('stage', ['new', 'voting'])
     .order('submitted_at', { ascending: false })
 
-  // Filter to apps that need user's vote
+  // Filter to apps that need user's vote (compare with person id)
   const needsVote = pipelineApps?.filter((app) => {
     const initialVotes = app.saifcrm_votes?.filter((v: any) => v.vote_type === 'initial') || []
-    return !initialVotes.some((v: any) => v.user_id === user.id)
+    return !initialVotes.some((v: any) => v.user_id === profile?.id)
   }).map(app => ({
     id: app.id,
     company_name: app.company_name,
@@ -47,11 +47,11 @@ export default async function DashboardPage() {
     submitted_at: app.submitted_at,
   })) || []
 
-  // Get applications assigned to current user for email follow-up
+  // Get applications assigned to current user for email follow-up (use person id)
   const { data: myEmailAssignments } = await supabase
     .from('saifcrm_applications')
     .select('id, company_name, founder_names, primary_email, stage, email_sent')
-    .eq('email_sender_id', user.id)
+    .eq('email_sender_id', profile?.id || '')
     .in('stage', ['deliberation', 'rejected'])
     .order('submitted_at', { ascending: false })
 
@@ -66,7 +66,7 @@ export default async function DashboardPage() {
       stage,
       email_sent,
       email_sender_id,
-      saif_users!applications_email_sender_id_fkey(name)
+      saif_people!applications_email_sender_id_fkey(name)
     `)
     .not('email_sender_id', 'is', null)
     .in('stage', ['deliberation', 'rejected'])
@@ -120,12 +120,12 @@ export default async function DashboardPage() {
         myEmailAssignments={myEmailAssignments || []}
         allEmailAssignments={allEmailAssignments?.map(app => ({
           ...app,
-          assignedTo: (app.saif_users as any)?.name || 'Unknown'
+          assignedTo: (app.saif_people as any)?.name || 'Unknown'
         })) || []}
         needsDecision={needsDecision}
         stats={stats}
         notifications={notifications}
-        userId={user.id}
+        userId={profile?.id || ''}
       />
     </div>
   )

@@ -19,11 +19,11 @@ export default async function DeliberationDetailPage({
     redirect('/login')
   }
 
-  // Get user profile
+  // Get user profile (using auth_user_id to link to auth.users)
   const { data: profile } = await supabase
-    .from('saif_users')
-    .select('name')
-    .eq('id', user.id)
+    .from('saif_people')
+    .select('id, name')
+    .eq('auth_user_id', user.id)
     .single()
 
   // Get the application with all related data
@@ -31,7 +31,7 @@ export default async function DeliberationDetailPage({
     .from('saifcrm_applications')
     .select(`
       *,
-      saifcrm_votes(id, vote, user_id, notes, vote_type, saif_users(name)),
+      saifcrm_votes(id, vote, user_id, notes, vote_type, saif_people(name)),
       saifcrm_deliberations(*)
     `)
     .eq('id', id)
@@ -41,18 +41,18 @@ export default async function DeliberationDetailPage({
     notFound()
   }
 
-  // Get all users for reference
-  const { data: users } = await supabase
-    .from('saif_users')
+  // Get all people for reference
+  const { data: people } = await supabase
+    .from('saif_people')
     .select('id, name')
 
-  const usersMap = new Map(users?.map((u) => [u.id, u.name]) || [])
+  const peopleMap = new Map(people?.map((p) => [p.id, p.name]) || [])
 
   // Transform votes
   const initialVotes = application.saifcrm_votes?.filter((v: any) => v.vote_type === 'initial') || []
   const votes = initialVotes.map((v: any) => ({
     oduserId: v.user_id,
-    userName: v.saif_users?.name || usersMap.get(v.user_id) || 'Unknown',
+    userName: v.saif_people?.name || peopleMap.get(v.user_id) || 'Unknown',
     vote: v.vote,
     notes: v.notes,
   }))
@@ -84,7 +84,7 @@ export default async function DeliberationDetailPage({
       <Navigation userName={profile?.name || user.email || 'User'} />
       <DeliberationDetailClient
         application={applicationData}
-        userId={user.id}
+        userId={profile?.id || ''}
         userName={profile?.name || user.email || 'User'}
       />
     </div>

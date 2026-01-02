@@ -14,11 +14,11 @@ export default async function PortfolioPage() {
     redirect('/login')
   }
 
-  // Get user profile
+  // Get user profile (using auth_user_id to link to auth.users)
   const { data: profile } = await supabase
-    .from('saif_users')
-    .select('name')
-    .eq('id', user.id)
+    .from('saif_people')
+    .select('id, name')
+    .eq('auth_user_id', user.id)
     .single()
 
   // Get all investments

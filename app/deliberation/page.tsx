@@ -14,11 +14,11 @@ export default async function DeliberationPage() {
     redirect('/login')
   }
 
-  // Get user profile
+  // Get user profile (using auth_user_id to link to auth.users)
   const { data: profile } = await supabase
-    .from('saif_users')
-    .select('name')
-    .eq('id', user.id)
+    .from('saif_people')
+    .select('id, name')
+    .eq('auth_user_id', user.id)
     .single()
 
   // Get applications in deliberation with all votes revealed
@@ -26,19 +26,19 @@ export default async function DeliberationPage() {
     .from('saifcrm_applications')
     .select(`
       *,
-      saifcrm_votes(id, vote, user_id, notes, vote_type, saif_users(name)),
+      saifcrm_votes(id, vote, user_id, notes, vote_type, saif_people(name)),
       saifcrm_deliberations(*),
-      email_sender:saif_users!applications_email_sender_id_fkey(name)
+      email_sender:saif_people!applications_email_sender_id_fkey(name)
     `)
     .eq('stage', 'deliberation')
     .eq('votes_revealed', true)
 
-  // Get all users for reference
-  const { data: users } = await supabase
-    .from('saif_users')
+  // Get all people for reference
+  const { data: people } = await supabase
+    .from('saif_people')
     .select('id, name')
 
-  const usersMap = new Map(users?.map((u) => [u.id, u.name]) || [])
+  const peopleMap = new Map(people?.map((p) => [p.id, p.name]) || [])
 
   // Transform applications to include vote breakdown
   const applicationsWithVotes = applications?.map((app) => {
@@ -47,7 +47,7 @@ export default async function DeliberationPage() {
 
     const votes = initialVotes.map((v: any) => ({
       userId: v.user_id,
-      userName: v.saif_users?.name || usersMap.get(v.user_id) || 'Unknown',
+      userName: v.saif_people?.name || peopleMap.get(v.user_id) || 'Unknown',
       vote: v.vote,
       notes: v.notes,
     }))
@@ -92,7 +92,7 @@ export default async function DeliberationPage() {
       <DeliberationClient
         undecidedApplications={undecided}
         decidedApplications={decided}
-        userId={user.id}
+        userId={profile?.id || ''}
       />
     </div>
   )
